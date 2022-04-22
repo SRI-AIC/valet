@@ -1,0 +1,23 @@
+# include most files
+include *
+include src/valetrules/data/*.vrules
+
+# include tests for a source delivery
+include tests/*
+
+# exclude a few
+exclude .srimeta/srimeta.yaml
+exclude MANIFEST.in
+exclude .gitignore
+
+#now pick up the docs before taking out a few
+include docs/*.md
+exclude docs/VREP.md
+exclude docs/VRConsole.md
+exclude docs/VRScriptWalkthrough.md
+# referenced by VRScript.md
+include docs/samplerules
+include docs/sampletext
+
+#include the scripts dir
+include scripts/*

@@ -1,0 +1,83 @@
+############################################
+# Cheap word tests
+############################################
+
+to_be: { is am are be being was were }i
+
+############################################
+# Tests based on part of speech
+############################################
+
+determiner: pos[DT]
+adjective:  pos[JJ CD]
+number:     pos[CD]
+pronoun:    pos[PRP]
+noun:       pos[NN NNS NNP NNPS]
+nominal:    &noun or &pronoun
+adverb:     pos[RB]
+preposition: pos[IN]
+noun_qualifier: &adjective or &qualifying_verb
+
+# Various verb inflections
+verb:            pos[VBG VBZ VBD MD VB VBP VBN]
+auxiliary_verb:  pos[MD]
+qualifying_verb: pos[VBN]
+
+
+##########################################
+# Syntactic relations
+##########################################
+
+# Only the main verb (or noun headword, if sentence fragment) has this dep
+sentence_root ^ root
+
+# Include main verbs of all clauses
+clause_root ^ conj* root
+
+# Connects a verb to its subject
+subject ^ nsubj
+
+# Connnects a verb to its (possibly multiple) subjects
+subjects ^ nsubj conj*
+
+# Connects a verb to its direct object headword
+object ^ obj
+
+# Connects a verb to all conjunctively linked direct objects headword
+objects ^ conj* obj conj*
+
+# Connects a verb to its indirect object headword
+iobject ^ obl
+
+# connects a verb to all conjunctively linked indirect object headwords
+iobjects ^ conj* obl conj*
+
+# Connects a noun headword with the preposition that governs it
+case ^ case
+
+
+##########################################
+# Chunks
+##########################################
+
+base_noun_phrase -> &pronoun | &determiner? &noun_qualifier* &noun+
+
+# A base noun phrase governed by some preposition
+cased_bnp ~ select(base_noun_phrase, 
+                   connects(case, preposition, base_noun_phrase))
+
+# A base noun phrase *not* governed by a preposition
+top_level_bnp ~ diff(base_noun_phrase, cased_bnp)
+
+
+
+####################################
+# Coordinators selecting relation arguments
+####################################
+
+verb_subject  ~ select(base_noun_phrase, 
+                       connects(subject, verb, base_noun_phrase))
+
+verb_subjects ~ select(base_noun_phrase, 
+                       connects(subjects, verb, base_noun_phrase))
+

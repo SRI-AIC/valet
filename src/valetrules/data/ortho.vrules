@@ -1,0 +1,17 @@
+
+# Matches any token.  Use with care, since it generates a lot of matches.
+any: /./
+
+alpha:       /^[a-z]+$/i
+numeric:     /^[0-9]+$/
+alphanum:    /^[a-z0-9]+$/i
+punctuation: not &alphanum
+
+cap:         /^[A-Z]/
+allcap:      /^[A-Z]+$/
+initial:     /^[A-Z]$/
+
+lparen: { ( }
+rparen: { ) }
+
+

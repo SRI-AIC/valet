@@ -1,0 +1,328 @@
+
+
+Advertisement
+TechOnTheNet Logo
+
+    Home
+
+Oops, something seems to be preventing the display of our advertisements. This website would not exist without the advertisements we display and your kind donations. If you are unable to support us by viewing our advertisements, please consider making a Donation to ensure the future of this website.
+
+You can learn more about how we use advertisements here.
+Donate
+
+    Databases
+    SQL
+    Oracle / PLSQL
+    SQL Server
+    MySQL
+    MariaDB
+    PostgreSQL
+    SQLite
+
+    MS Office
+    Excel
+    Access
+    Word
+
+    Web Development
+    HTML
+    CSS
+    JavaScript
+    Color Picker
+
+    Programming
+    C Language
+
+    More
+    ASCII
+    Unicode
+    Linux
+    UNIX
+    Techie Humor
+
+Advertisement
+totn Ascii Table
+ASCII Table
+
+ASCII (which stands for American Standard Code for Information Interchange) is a character encoding standard for text files in computers and other devices. ASCII is a subset of Unicode and is made up of 128 symbols in the character set. These symbols consist of letters (both uppercase and lowercase), numbers, punctuation marks, special characters and control characters. Each symbol in the character set can be represented by a Decimal value ranging from 0 to 127, as well as equivalent Hexadecimal and Octal values.
+
+The following is a listing of ASCII values displaying the Decimal, Hexadecimal, Octal and Character values for each ASCII character.
+Standard ASCII Characters
+Dec 	Hex 	Oct 	Char 	Description
+0 	00 	000 	^@ 	Null (NUL)
+1 	01 	001 	^A 	Start of heading (SOH)
+2 	02 	002 	^B 	Start of text (STX)
+3 	03 	003 	^C 	End of text (ETX)
+4 	04 	004 	^D 	End of transmission (EOT)
+5 	05 	005 	^E 	Enquiry (ENQ)
+6 	06 	006 	^F 	Acknowledge (ACK)
+7 	07 	007 	^G 	Bell (BEL)
+8 	08 	010 	^H 	Backspace (BS)
+9 	09 	011 	^I 	Horizontal tab (HT)
+10 	0A 	012 	^J 	Line feed (LF)
+11 	0B 	013 	^K 	Vertical tab (VT)
+12 	0C 	014 	^L 	New page/form feed (FF)
+13 	0D 	015 	^M 	Carriage return (CR)
+14 	0E 	016 	^N 	Shift out (SO)
+15 	0F 	017 	^O 	Shift in (SI)
+16 	10 	020 	^P 	Data link escape (DLE)
+17 	11 	021 	^Q 	Device control 1 (DC1)
+18 	12 	022 	^R 	Device control 2 (DC2)
+19 	13 	023 	^S 	Device control 3 (DC3)
+20 	14 	024 	^T 	Device control 4 (DC4)
+21 	15 	025 	^U 	Negative acknowledge (NAK)
+22 	16 	026 	^V 	Synchronous idle (SYN)
+23 	17 	027 	^W 	End of transmission block (ETB)
+24 	18 	030 	^X 	Cancel (CAN)
+25 	19 	031 	^Y 	End of medium (EM)
+26 	1A 	032 	^Z 	Substitute (SUB)
+27 	1B 	033 	^[ 	Escape (ESC)
+28 	1C 	034 	^\ 	File separator (FS)
+29 	1D 	035 	^] 	Group separator (GS)
+30 	1E 	036 	^^ 	Record separator (RS)
+31 	1F 	037 	^_ 	Unit separator (US)
+32 	20 	040 		Space
+33 	21 	041 	! 	Exclamation mark
+34 	22 	042 	" 	Quotation mark/Double quote
+35 	23 	043 	# 	Number sign
+36 	24 	044 	$ 	Dollar sign
+37 	25 	045 	% 	Percent sign
+38 	26 	046 	& 	Ampersand
+39 	27 	047 	' 	Apostrophe/Single quote
+40 	28 	050 	( 	Left parenthesis
+41 	29 	051 	) 	Right parenthesis
+42 	2A 	052 	* 	Asterisk
+43 	2B 	053 	+ 	Plus sign
+44 	2C 	054 	, 	Comma
+45 	2D 	055 	- 	Hyphen/Minus
+46 	2E 	056 	. 	Full stop/Period
+47 	2F 	057 	/ 	Solidus/Slash
+48 	30 	060 	0 	Digit zero
+49 	31 	061 	1 	Digit one
+50 	32 	062 	2 	Digit two
+51 	33 	063 	3 	Digit three
+52 	34 	064 	4 	Digit four
+53 	35 	065 	5 	Digit five
+54 	36 	066 	6 	Digit six
+55 	37 	067 	7 	Digit seven
+56 	38 	070 	8 	Digit eight
+57 	39 	071 	9 	Digit nine
+58 	3A 	072 	: 	Colon
+59 	3B 	073 	; 	Semicolon
+60 	3C 	074 	< 	Less-than sign
+61 	3D 	075 	= 	Equal/Equality sign
+62 	3E 	076 	> 	Greater-than sign
+63 	3F 	077 	? 	Question mark
+Dec 	Hex 	Oct 	Char 	Description
+64 	40 	100 	@ 	Commercial at/At sign
+65 	41 	101 	A 	Latin capital letter A
+66 	42 	102 	B 	Latin capital letter B
+67 	43 	103 	C 	Latin capital letter C
+68 	44 	104 	D 	Latin capital letter D
+69 	45 	105 	E 	Latin capital letter E
+70 	46 	106 	F 	Latin capital letter F
+71 	47 	107 	G 	Latin capital letter G
+72 	48 	110 	H 	Latin capital letter H
+73 	49 	111 	I 	Latin capital letter I
+74 	4A 	112 	J 	Latin capital letter J
+75 	4B 	113 	K 	Latin capital letter K
+76 	4C 	114 	L 	Latin capital letter L
+77 	4D 	115 	M 	Latin capital letter M
+78 	4E 	116 	N 	Latin capital letter N
+79 	4F 	117 	O 	Latin capital letter O
+80 	50 	120 	P 	Latin capital letter P
+81 	51 	121 	Q 	Latin capital letter Q
+82 	52 	122 	R 	Latin capital letter R
+83 	53 	123 	S 	Latin capital letter S
+84 	54 	124 	T 	Latin capital letter T
+85 	55 	125 	U 	Latin capital letter U
+86 	56 	126 	V 	Latin capital letter V
+87 	57 	127 	W 	Latin capital letter W
+88 	58 	130 	X 	Latin capital letter X
+89 	59 	131 	Y 	Latin capital letter Y
+90 	5A 	132 	Z 	Latin capital letter Z
+91 	5B 	133 	[ 	Left square bracket
+92 	5C 	134 	\ 	Reverse solidus/Backslash
+93 	5D 	135 	] 	Right square bracket
+94 	5E 	136 	^ 	Circumflex accent/Caret
+95 	5F 	137 	_ 	Underscore/Low line
+96 	60 	140 	` 	Grave accent
+97 	61 	141 	a 	Latin small letter a
+98 	62 	142 	b 	Latin small letter b
+99 	63 	143 	c 	Latin small letter c
+100 	64 	144 	d 	Latin small letter d
+101 	65 	145 	e 	Latin small letter e
+102 	66 	146 	f 	Latin small letter f
+103 	67 	147 	g 	Latin small letter g
+104 	68 	150 	h 	Latin small letter h
+105 	69 	151 	i 	Latin small letter i
+106 	6A 	152 	j 	Latin small letter j
+107 	6B 	153 	k 	Latin small letter k
+108 	6C 	154 	l 	Latin small letter l
+109 	6D 	155 	m 	Latin small letter m
+110 	6E 	156 	n 	Latin small letter n
+111 	6F 	157 	o 	Latin small letter o
+112 	70 	160 	p 	Latin small letter p
+113 	71 	161 	q 	Latin small letter q
+114 	72 	162 	r 	Latin small letter r
+115 	73 	163 	s 	Latin small letter s
+116 	74 	164 	t 	Latin small letter t
+117 	75 	165 	u 	Latin small letter u
+118 	76 	166 	v 	Latin small letter v
+119 	77 	167 	w 	Latin small letter w
+120 	78 	170 	x 	Latin small letter x
+121 	79 	171 	y 	Latin small letter y
+122 	7A 	172 	z 	Latin small letter z
+123 	7B 	173 	{ 	Left curly bracket
+124 	7C 	174 	| 	Vertical line/Vertical bar
+125 	7D 	175 	} 	Right curly bracket
+126 	7E 	176 	~ 	Tilde
+127 	7F 	177 	DEL 	Delete (DEL)
+
+In the ASCII character set, the Decimal values 0 to 31 as well as Decimal value 127 represent symbols that are non-printable. It is possible to generate these non-printable characters using a key sequence where ^ represents the control key on your keyboard. For example, you could generate a carriage return (Decimal value 13) by pressing the control key followed by the letter M on your keyboard (^M).
+
+All other symbols in the character set can printed or represented on the screen. These printable character values can be seen in the Char field in the table above.
+Extended ASCII Characters
+Dec 	Hex 	Oct 	Char 	Description
+128 	80 	200
+129 	81 	201
+130 	82 	202
+131 	83 	203
+132 	84 	204
+133 	85 	205
+134 	86 	206
+135 	87 	207
+136 	88 	210
+137 	89 	211
+138 	8A 	212
+139 	8B 	213
+140 	8C 	214
+141 	8D 	215
+142 	8E 	216
+143 	8F 	217
+144 	90 	220
+145 	91 	221
+146 	92 	222
+147 	93 	223
+148 	94 	224
+149 	95 	225
+150 	96 	226
+151 	97 	227
+152 	98 	230
+153 	99 	231
+154 	9A 	232
+155 	9B 	233
+156 	9C 	234
+157 	9D 	235
+158 	9E 	236
+159 	9F 	237
+160 	A0 	240 	  	No-break space
+161 	A1 	241 	¡ 	Inverted exclamation mark
+162 	A2 	242 	¢ 	Cent sign
+163 	A3 	243 	£ 	Pound sign
+164 	A4 	244 	¤ 	Currency sign
+165 	A5 	245 	¥ 	Yen/Yuan sign
+166 	A6 	246 	¦ 	Broken bar
+167 	A7 	247 	§ 	Section sign
+168 	A8 	250 	¨ 	Diaeresis
+169 	A9 	251 	© 	Copyright sign
+170 	AA 	252 	ª 	Feminine ordinal indicator
+171 	AB 	253 	« 	Left-pointing double angle quotation mark
+172 	AC 	254 	¬ 	Not sign
+173 	AD 	255 	­ 	Soft hyphen
+174 	AE 	256 	® 	Registered trademark sign
+175 	AF 	257 	¯ 	Macron
+176 	B0 	260 	° 	Degree sign
+177 	B1 	261 	± 	Plus-minus sign
+178 	B2 	262 	² 	Superscript two
+179 	B3 	263 	³ 	Superscript three
+180 	B4 	264 	´ 	Acute accent
+181 	B5 	265 	µ 	Micro sign (mu)
+182 	B6 	266 	¶ 	Pilcrow sign
+183 	B7 	267 	· 	Middle dot
+184 	B8 	270 	¸ 	Cedilla
+185 	B9 	271 	¹ 	Superscript one
+186 	BA 	272 	º 	Masculine ordinal indicator
+187 	BB 	273 	» 	Right-pointing double angle quotation mark
+188 	BC 	274 	¼ 	Vulgar fraction one quarter
+189 	BD 	275 	½ 	Vulgar fraction one half
+190 	BE 	276 	¾ 	Vulgar fraction three quarters
+191 	BF 	277 	¿ 	Inverted question mark
+Dec 	Hex 	Oct 	Char 	Description
+192 	C0 	300 	À 	Latin capital letter A with grave
+193 	C1 	301 	Á 	Latin capital letter A with acute
+194 	C2 	302 	Â 	Latin capital letter A with circumflex
+195 	C3 	303 	Ã 	Latin capital letter A with tilde
+196 	C4 	304 	Ä 	Latin capital letter A with diaeresis
+197 	C5 	305 	Å 	Latin capital letter A with ring above
+198 	C6 	306 	Æ 	Latin capital letter AE
+199 	C7 	307 	Ç 	Latin capital letter C with cedilla
+200 	C8 	310 	È 	Latin capital letter E with grave
+201 	C9 	311 	É 	Latin capital letter E with acute
+202 	CA 	312 	Ê 	Latin capital letter E with circumflex
+203 	CB 	313 	Ë 	Latin capital letter E with diaeresis
+204 	CC 	314 	Ì 	Latin capital letter I with grave
+205 	CD 	315 	Í 	Latin capital letter I with acute
+206 	CE 	316 	Î 	Latin capital letter I with circumflex
+207 	CF 	317 	Ï 	Latin capital letter I with diaeresis
+208 	D0 	320 	Ð 	Latin capital letter ETH
+209 	D1 	321 	Ñ 	Latin capital letter N with tilde
+210 	D2 	322 	Ò 	Latin capital letter O with grave
+211 	D3 	323 	Ó 	Latin capital letter O with acute
+212 	D4 	324 	Ô 	Latin capital letter O with circumflex
+213 	D5 	325 	Õ 	Latin capital letter O with tilde
+214 	D6 	326 	Ö 	Latin capital letter O with diaeresis
+215 	D7 	327 	× 	Multiplication sign
+216 	D8 	330 	Ø 	Latin capital letter O with stroke
+217 	D9 	331 	Ù 	Latin capital letter U with grave
+218 	DA 	332 	Ú 	Latin capital letter U with acute
+219 	DB 	333 	Û 	Latin capital letter U with circumflex
+220 	DC 	334 	Ü 	Latin capital letter U with diaeresis
+221 	DD 	335 	Ý 	Latin capital letter Y with acute
+222 	DE 	336 	Þ 	Latin capital letter THORN
+223 	DF 	337 	ß 	Latin small letter sharp s
+224 	E0 	340 	à 	Latin small letter a with grave
+225 	E1 	341 	á 	Latin small letter a with acute
+226 	E2 	342 	â 	Latin small letter a with circumflex
+227 	E3 	343 	ã 	Latin small letter a with tilde
+228 	E4 	344 	ä 	Latin small letter a with diaeresis
+229 	E5 	345 	å 	Latin small letter a with ring above
+230 	E6 	346 	æ 	Latin small letter ae
+231 	E7 	347 	ç 	Latin small letter c with cedilla
+232 	E8 	350 	è 	Latin small letter e with grave
+233 	E9 	351 	é 	Latin small letter e with acute
+234 	EA 	352 	ê 	Latin small letter e with circumflex
+235 	EB 	353 	ë 	Latin small letter e with diaeresis
+236 	EC 	354 	ì 	Latin small letter i with grave
+237 	ED 	355 	í 	Latin small letter i with acute
+238 	EE 	356 	î 	Latin small letter i with circumflex
+239 	EF 	357 	ï 	Latin small letter i with diaeresis
+240 	F0 	360 	ð 	Latin small letter eth
+241 	F1 	361 	ñ 	Latin small letter n with tilde
+242 	F2 	362 	ò 	Latin small letter o with grave
+243 	F3 	363 	ó 	Latin small letter o with acute
+244 	F4 	364 	ô 	Latin small letter o with circumflex
+245 	F5 	365 	õ 	Latin small letter o with tilde
+246 	F6 	366 	ö 	Latin small letter o with diaeresis
+247 	F7 	367 	÷ 	Division sign/Obelus
+248 	F8 	370 	ø 	Latin small letter o with stroke
+249 	F9 	371 	ù 	Latin small letter u with grave
+250 	FA 	372 	ú 	Latin small letter u with acute
+251 	FB 	373 	û 	Latin small letter u with circumflex
+252 	FC 	374 	ü 	Latin small letter u with diaeresis
+253 	FD 	375 	ý 	Latin small letter y with acute
+254 	FE 	376 	þ 	Latin small letter thorn
+255 	FF 	377 	ÿ 	Latin small letter y with diaeresis
+Share on
+
+Advertisement
+
+Back to top
+
+Home | About Us | Contact Us | Testimonials | Donate
+
+While using this site, you agree to have read and accepted our Terms of Service and Privacy Policy.
+
+We use advertisements to support this website and fund the development of new content.
+
+Copyright © 2003-2020 TechOnTheNet.com. All rights reserved.

@@ -1,0 +1,31 @@
+# Token tests.  
+
+dollar   : { $ }
+point    : { . }
+leadd   : /^\d\d?\d?$/
+twod    : /^\d\d$/
+threed    : /^\d\d\d$/
+anytoken  : /./
+anynum : /^\d+$/
+docname : /^VR[A-Za-z]/
+
+# Lookup
+propnoun : pos[ NNP ]
+noun: pos[ NN NNS ]
+
+# Phrase patterns.  Numbers and punctuation get separated under the
+# default tokenization, so bignum reassembles numbers with
+# internal punctuation.
+bignum -> &leadd ( , &threed )* ( &point &twod ) ?
+money  -> &dollar @bignum
+annual -> annual
+# & references a previously defined token test
+mdsuffix -> &point md
+# @ references a previously defined phrase pattern
+docref -> &docname @mdsuffix
+
+# Coordinators
+mamt   ~ select(bignum, match(money, _))
+amamt ~ select(bignum, near(annual, 5, match(money, _), invert))
+notmoney ~ prefix(dollar, match(bignum, _), invert)
+

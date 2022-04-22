@@ -1,0 +1,5 @@
+# A token test expression that will be imported
+my_caps : /[A-Z]/
+
+# A phrase rule that will be imported
+two_caps -> &my_caps &my_caps

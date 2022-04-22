@@ -1,0 +1,167 @@
+####################################
+
+# Valet Rules – Example rule file and syntax demonstration
+
+# This is a Valet Rules example rules file, intended as key
+# documentation of the Valet Rules rules language. The rules included
+# are designed to demonstrate the wide a variety of correctly formatted
+# rules. It even includes some examples of incorrect syntax (necessarily
+# in the form of comments). The file is used as input to unit tests to
+# verify correctness of the file and the Valet software that processes
+# it.
+
+####################################
+#### Generic expression syntax
+
+# 1) Expressions must start at left margin (a # starting a line
+#    indicates a comment).
+
+# 2) Expressions with indentation continue the previous line.
+
+# 3) All rules have two sides. The left side is a "name", which must
+#    be alphanumeric (i.e., [A-Za-z0-9_]).
+
+# 4) The left and right side is separated by a delimiter that
+#    indicates the expression type.
+
+#  ':'   delimiter == Test Expression
+#  '->'  delimiter == Phrase Expression
+#  '<-'  delimiter == Import Expression
+#  'L->' delimiter == Lexicon Import Expression
+#  '~'   delimiter == Coordinator Expression
+#  '^'   delimiter == Dependency Expression
+#  '$'   delimiter == Frame Expression
+
+####################################
+#### Token test expressions (delimiter = ":")
+
+# Token tests apply only to individual tokens in the input. 
+
+# The right side of a test expression should match one of the
+# following python regular expressions
+
+# Membership == {.*?}i?
+# Lookup     == \w+\[.*?\]
+# Regex      == /\S+?/i?
+# Substring  == <\S+>i?
+
+# ---------
+# Membership tests split the string in between the curly braces on
+# whitespace. A trailing 'i' qualifier causes the test to be applied
+# in a case-insensitive manner
+
+article   :   { a an the }i
+dollar    :   { $ }
+point     :   { . }
+oddities  :   { ^ @ ! " # $ % & ' ( ) * + , - . / : ; < = > ? [ \ ] _ ` | ~ }
+mathrel   :   { < ≤ ⩽ ≪ ≮ > ≥ ⩾ ≫ ≯ ≠ = ~ ∼ }
+# To match curly braces, use a regex token test, see below.
+
+# Here's an example token test expression that spans multiple lines,
+# using the indentation syntax.
+
+multiline  :  { a few things here
+                more stuff again
+	        and finally }i
+
+# ---------
+# Lookup token tests retrieve annotations attached to the raw token
+# sequence typically provided by general-purpose NLP components test
+# true for any token having the indicated annotations
+
+noun  :  pos[ NN NNS ]
+
+# --------- 
+# Regex token tests use regular expressions to match the token. These
+# uses the regular expression syntax defined in the python `re`
+# module. (A trailing 'i' qualifier causes the test to be applied in a
+# case-insensitive manner.)
+
+braces   :  /[{}]/
+caps     :  /[A-Z]/
+digit    :  /\d/
+num      :  /\d+/
+anything :  /.+/
+dash     :  /[\u002D\u058A\u05BE\u1400\u1806\u2010-\u2015\u2212\u2E17\u2E1A\u2E3A\u2E3B\u2E40\u301C\u3030\u30A0\uFE31\uFE32\uFE58\uFE63\uFF0D]/
+nonword  :  /[^A-Za-z0-9]+/
+
+# Note that by default the 'nonword' pattern above will only match
+# single character tokens, despite the '+' symbol being present,
+# because the default tokenizer will not collect such characters into
+# multi-character tokens.
+
+#---------
+# Substring token tests return true for any token containing the
+# indicated string as a substring. (A trailing 'i' qualifer causes the
+# test to be applied in a case-insensitive manner.)
+
+contains_st  :  <st>i
+
+# ---------
+# Token test references refer to previously defined tests. You refer
+# to a previously defined token test using ampersand '&' followed by
+# the test name.
+
+caps_again  :  &caps
+
+# ---------
+# Boolean combinations combine any of the test types presented above
+# may be combined in Boolean expressions using the operators 'not',
+# 'and', and 'or', which have the usual interpretation and precedence.
+
+first_five    :  { 1 2 3 4 5 }
+another_five  :  { 4 5 6 7 8 }
+and_five      :  &first_five and &another_five
+or_five       :  &first_five or &another_five
+and_not_five  :  &first_five and not &another_five
+
+# In addition, subexpressions may be nested in parantheses for clarity
+# or to override standard precedence.
+
+bool  :  /\d/ or ( &noun and &contains_st )
+
+# ---------
+# Special token test examples...
+
+# The following token test won't match because, for each member of the
+# test set, the tokenizer will split those strings into multiple
+# tokens. Since token tests only match one token at a time, none will
+# match. A phrase expression is required instead.
+
+never_matches_1 : { <- &t <> $$ }
+
+# This one won't match because the tokenizer considers space in the
+# input as being between tokens. So no token will ever contain a
+# space, at least when using the default tokenizer.
+
+never_matches_2 : /\s+/
+
+# The following never matches because it's an incorrect use of a
+# regular expression inside of a membership test. The string is
+# interpreted literally, not as a regex.
+
+never_matches_3 : { /[A-Z]/ }
+
+####################################
+#### Import expressions (delimiter = "<-")
+
+# Import expressions read in a separate rules file and make the rules
+# contained in it available to the current rules file via a
+# dot-separated prefix.
+
+# The following example reads in the rules defined in
+# 'other-rules.vrules' and makes them available from the prefix name
+# 'imported.'. For example, if there is an extractor `two_caps` defined
+# in the 'other-rules.vrules' file, expressions subsequent to this
+# import can access it as `imported.two_caps`. Valet Rules files
+# typically have a '.vrules' suffix, but this is not required.
+# See the documentation for how relative (including absent) pathnames 
+# are resolved.
+
+imported <- other-rules.vrules
+two_caps -> @imported.two_caps
+
+# There are also built-in rules files in the src/valetrules/data directory.
+
+syntax <- syntax.vrules
+to_be : &syntax.to_be
