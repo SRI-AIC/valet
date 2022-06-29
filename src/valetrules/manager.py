@@ -564,7 +564,7 @@ class VRManager(SimpleClass):
         #return str(match) + ":" + fragment
 
     def get_frame(self, toks, match):
-        return toks.find_paths(match.begin,match.end)
+        return toks.find_paths(match.begin, match.end)
 
     def frame_from_token_sequence(self, patname, toks, first_only=False):
         if first_only:

@@ -52,7 +52,7 @@ iobject ^ obl
 # connects a verb to all conjunctively linked indirect object headwords
 iobjects ^ conj* obl conj*
 
-# Connects a noun headword with the preposition that governs it
+# Connects a noun or adjectival headword with the preposition that governs it
 case ^ case
 
 

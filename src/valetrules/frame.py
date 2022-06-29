@@ -1,4 +1,5 @@
 import re
+from copy import copy
 from typing import Text, Tuple
 
 from nlpcore.dbfutil import SimpleClass, GenericException
@@ -57,20 +58,45 @@ class FrameExtractor(object):
     def extract_from_match(self, match) -> 'Frame':
         """Return a Frame for the match (which should be of this extractor)."""
         frame = Frame()
+        self.extract_fields(frame, match)
+        return frame
+
+    def extract_fields(self, frame, match):
         for mnames, fnames in self.fields.items():
             fld = fnames[0]
             fnames = fnames[1:]
-            added = False
             for m in match.query(*mnames):
                 frame.add_field(fld, m)
-                added = True
                 if len(fnames) > 0:
                     fld = fnames[0]
                     fnames = fnames[1:]
-            # Failed to populate one of the fields: None
-#            if not added:
-#                return None
+
+
+class ExtendedFrameExtractor(FrameExtractor):
+
+    def __init__(self, parent, name, base_extractor):
+        super().__init__(parent, name)
+        self.base_extractor = base_extractor
+
+    def requirements(self):
+        return self.base_extractor.requirements()
+
+    def set_source_sequence(self, toks: TokenSequence):
+        self.base_extractor.set_source_sequence(toks)
+
+    def matches(self):
+        for m in self.base_extractor.matches():
+            yield m
+
+    def scan(self, start=0):
+        for m in self.base_extractor.scan(start=start):
+            yield m
+
+    def extract_from_match(self, match) -> Frame:
+        frame = self.base_extractor.extract_from_match(match)
+        self.extract_fields(frame, match)
         return frame
+
 
 
 class MultiFrameExtractor(FrameExtractor):
@@ -84,17 +110,19 @@ class FrameParsingException(Exception):
 class FrameExpression(SimpleClass):
 
     IDENTIFIER = r'(?:\w+\.)*\w+$'
+    OPERATOR = r'frame|extend$'
 
     def __init__(self, **args):
         SimpleClass.__init__(self, **args)
         self._default('token_expression', r'(?:\w+\.)*\w+|\S')
+        self.frame_extractor = None
 
     def tokenize(self, text):
         return re.findall(self.token_expression, text)
 
     def parse(self):
         self.tokens = self.tokenize(self.string)
-        self.frame()
+        self.frame_expression()
         if len(self.tokens) > 0:
             raise FrameParsingException("Extra tokens in input starting with '%s'" % self.tokens)
         return self.frame_extractor
@@ -120,14 +148,22 @@ class FrameExpression(SimpleClass):
             raise FrameParsingException("Token '%s' not one of %s" % (tok, options))
         return tok
 
+    def frame_expression(self):
+        op = self._pop_identifier(self.OPERATOR)
+        if op == 'frame':
+            self.frame()
+        else:  # op == 'extend'
+            self.extend()
+
     def frame(self):
-        self._pop_keyword('frame')
         self._pop_token('(')
-        # TODO Do we need to allow import references here?
-        name = self._pop_identifier(r'\w+$')
-        if not name in self.parent.defined_extractors():
+        name = self._pop_identifier(self.IDENTIFIER)
+        if not self.parent.extractor_is_defined(name):
             raise GenericException(msg="No such extractor: %s" % name)
         self.frame_extractor = FrameExtractor(self.parent, name)
+        self.frame_arguments()
+
+    def frame_arguments(self):
         while True:
             try:
                 self._pop_token(',')
@@ -135,6 +171,16 @@ class FrameExpression(SimpleClass):
                 break
             self.frame_argument()
         self._pop_token(')')
+
+    def extend(self):
+        self._pop_token('(')
+        # TODO Do we need to allow import references here?
+        name = self._pop_identifier(self.IDENTIFIER)
+        base_extractor, type_ = self.parent.lookup_extractor(name)
+        if type_ != 'frame':
+            raise ValueError("'%s' does not name a frame" % name)
+        self.frame_extractor = ExtendedFrameExtractor(self.parent, name, base_extractor)
+        self.frame_arguments()
 
     def frame_argument(self):
         # TODO Do we need to allow import references here?

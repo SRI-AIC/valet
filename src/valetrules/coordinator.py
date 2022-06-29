@@ -67,16 +67,18 @@ class Coordinator(SimpleClass):
 # as output, so we need to have a way of producing an initial match stream, 
 # which this class provides. 
 #
-# It returns a single match covering the full extent of the token sequence.
+# With default start/end arguments, the scan method generates a single match 
+# covering the full extent of the token sequence.
 # Applying the match coordinator (which applies an extractor within the 
 # extents of the matches in its input stream) to this match stream thus has 
 # the same semantics as VRManager performing a scan on the token sequence.
 #
-# With non-default start/end arguments, it returns a single match with 
+# With non-default start/end arguments, it generates a single match with 
 # the indicated extent. This is the mechanism that allows coordinators to, 
-# eg, match within the extent of another coordinator match, rather than 
-# having to do what they did earlier, which is to overgenerate matches 
-# and then drop ones that went beyond that extent.
+# eg, efficiently match within the extent of another coordinator match, 
+# rather than having to do what they did earlier, which was to overgenerate 
+# matches using the full token sequence and then drop ones that went beyond 
+# that extent.
 #
 # So if there's no further context, _ represents the full extent of the tseq, 
 # but in a larger context _ may refer to limits establish by surrounding 
@@ -89,9 +91,11 @@ class Coordinator(SimpleClass):
 # where the second expression is equivalent to 
 #   noun_in_phrase2 ~ match(noun_coord, match(noun_phrase, _))
 # the noun_phrase matching is done against the full tseq extents, 
-# but the noun matching is done against the extents of noun_phrase matching, 
+# but the noun matching is done against the extents of noun_phrase matches, 
 # even though '_' is present in both match expressions (implicitly in 
 # the second one).
+# FWIW, the following, using noun directly, gives essentially the same results.
+#   noun_in_phrase2 ~ match(noun, match(noun_phrase, _))
 #
 class BaseCoordinator(Coordinator):
     """Base match stream specified by '_'."""
@@ -882,21 +886,17 @@ class IntersectionCoordinator(NFeedCoordinator):
     Matches in the leftmost stream that are co-extensive in the all streams.
     """
 
-    def scan_old(self, start=0, end=None):
-        for lm, rm in self._generate_overlaps_scan(start=start, end=end):
-            if lm == rm:
-                # For filter-type coordinators, the new CoordMatch
-                # always has the same extent as the feed match --
-                # or one of them, if there are two, and currently
-                # it's always the left feed match.
-                yield CoordMatch(lm, op=self, left=lm, right=rm, name=self.name)
-
     def scan(self, start=0, end=None):
         result = None
         for feed in self.feeds:
             matches = feed.scan(start=start, end=end)
             if result is None:
-                result = dict((m, CoordMatch(m, op=self, name=self.name, submatches=[m])) for m in matches)
+                result = {}
+                for m in matches:
+                    try:
+                        result[m].submatches.append(m)
+                    except KeyError:
+                        result[m] = CoordMatch(m, op=self, name=self.name, submatches=[m])
             else:
                 matched = set()
                 for m in matches:
@@ -933,12 +933,6 @@ class UnionCoordinator(NFeedCoordinator):
         for m in result.values():
             yield m
 
-    def scan_old(self, start=0, end=None):
-        for lm in self.left_feed.scan(start=start, end=end):
-            yield CoordMatch(lm, op=self, left=lm,  submatch=lm, name=self.name)
-        for rm in self.right_feed.scan(start=start, end=end):
-            yield CoordMatch(rm, op=self, right=rm, submatch=rm, name=self.name)
-
     def __str__(self):
         return "UnionCoordinator(%s)" % " , ".join(str(feed) for feed in self.feeds)
 
@@ -951,23 +945,22 @@ class DiffCoordinator(NFeedCoordinator):
     def scan(self, start=0, end=None):
         result = None
         for feed in self.feeds:
-            matches = set(feed.scan(start=start, end=end))
+            matches = list(feed.scan(start=start, end=end))
             if result is None:
-                result = dict((m, CoordMatch(m, op=self, name=self.name, submatch=m)) for m in matches)
+                result = {}
+                for m in matches:
+                    try:
+                        result[m].submatches.append(m)
+                    except KeyError:
+                        result[m] = CoordMatch(m, op=self, name=self.name, submatches=[m])
             else:
-                for m in list(result.keys()):
-                    if m in matches:
+                for m in matches:
+                    if m in result:
                         del result[m]
             if len(result) == 0:
                 return
         for m in result.values():
             yield m
-
-    def scan_old(self, start=0, end=None):
-        rightm = set(self.right_feed.scan(start=start, end=end))
-        for lm in self.left_feed.scan(start=start, end=end):
-            if lm not in rightm:
-                yield CoordMatch(lm, op=self, left=lm, submatch=lm, name=self.name)
 
     def __str__(self):
         return "DiffCoordinator(%s)" % " , ".join(str(feed) for feed in self.feeds)

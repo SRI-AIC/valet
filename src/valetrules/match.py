@@ -193,6 +193,11 @@ class FAMatch(SimpleClass):
                 result.append(sm)
         return result
 
+    def print_match_trace(self, indent=0):
+        print("%s%s" % ((' ' * indent), self))
+        for m in self.get_submatches():
+            m.print_match_trace(indent=indent+2)
+
     # Similar to an xpath like /**/name1/**/name2/**/.../**/nameN.
     def query(self, *names) -> 'FAMatch':
         """Used with frames, for finding in the match/submatch tree a sequence
