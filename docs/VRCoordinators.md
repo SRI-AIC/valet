@@ -16,12 +16,10 @@ expressions:
 ```
 # A number token
 num : /^\d+$/
-```
-```
+
 # A numeric expression, possibly with commas and/or decimal point
 bignum -> &num ( , &num ) * ( . &num ) ?
-```
-```
+
 # A currency recognizer
 money -> $ @bignum
 ```
@@ -30,16 +28,18 @@ It was noted that, in principle, downstream code has access to the
 `bignum` portion of any match of `money`, but didn't explain how 
 this could be achieved.  It is always possible to interact with the 
 [`Match`](VRMatch.md) objects that result from the application of 
-the `money` extractor using the [API](VRAPI.md), but a coordinator 
-expression makes this easier and more transparent:
+the `money` extractor using the Python [API](VRAPI.md), but a coordinator 
+expression achives this access within the rule language itself, which is 
+far more convenient:
 
 ```
-money_amount ~ select(bignum, money)
+money_amount ~ select(bignum, match(money, _))
 ```
 
-This expression nests one coordinator operator in another.  The inner
-expression (`money`) generates a *stream* (sequence) of matches of the
-`money` extractor.  The [select](VRCoordinators.md#select-operator)
+This expression nests one coordinator expression in another.  The inner
+expression `match(money, _)` generates a *stream* (sequence) of matches 
+of the `money` extractor as applied to the token sequence. 
+The [select](VRCoordinators.md#select-operator)
 operator then converts this stream of matches to the submatches of
 `bignum` they contain, essentially selecting the numeric part of the
 monetary expression.
@@ -51,7 +51,7 @@ and transforming input streams.
 
 ## Coordinator Syntax
 
-A coordinator expression has the form:
+A coordinator pattern definition has the form:
 
 ```
 <name> ~ <expression>
@@ -93,19 +93,13 @@ The expression portion of the statement obeys the following grammar:
 
 <extractor> -> <identifier>             # The name of some extractor
 <proximity> -> <non_negative_integer>   # A distance in number of tokens
-<inverted> -> '0' | '1'                 # Whether to invert the test
 ```
 
-Currently, the `<extractor>` value for the `connects` operator must be the name
-of a parse extractor, not a coordinator, phrase extractor, or token test.
-(Currently, such names are accepted at parse time but result in an error at
-runtime.) 
-
-Note that the `&` and `@` characters used in other types of pattern expression
-to reference the names of token test extractors, phrase extractors, and parse
-extractors are neither required nor permitted in coordinator expressions.
-(The purpose of those referencing characters in those other contexts is to
-disambiguate references from literals, but there is no place for literals
+Note that the `&` and `@` characters used in token test, phrase, and parse 
+patterns when referencing other named patterns are neither required nor 
+permitted in coordinator expressions.
+(The purpose of those referencing characters in phrase and parse patterns is 
+to disambiguate references from literals, but there is no place for literals
 in coordinators, so such disambiguation is not necessary.)
 
 ## Coordinator Descriptions
@@ -118,6 +112,7 @@ coordinator expression:
 * [Match expressions](#match-expressions)
 * [Filter expressions](#filter-expressions)
 * [Proximal expressions](#proximal-expressions)
+* [N-ary expressions](#n-ary-expressions)
 * [Join expressions](#join-expressions)
 * [Connect expressions](#connect-expressions)
 
@@ -127,20 +122,28 @@ coordinator expression:
 |---|---|---|---|---|
 |[Underscore](#underscore-expression)|[underscore](#underscore-expression)|zero|no|matches full extent of each token sequence|
 |[Extractor](#extractor-expressions)|[extractor](#extractor-expressions)|one|no|syntactic sugar for match operator|
-|[Match](#match-expression)|[match](#match-operator)|one|no|matches of extractor within extent of stream matches|
-|[Match](#match-expression)|[select](#select-operator)|one|no|matches of extractor recorded as submatches by stream matches|
-|[Filter](#filter-expression)|[filter](#filter-operator)|one|yes|matches from stream for which extractor matches within extent of stream match|
-|[Filter](#filter-expression)|[prefix](#prefix-operator)|one|yes|matches from stream that have an immediately preceding extractor match|
-|[Filter](#filter-expression)|[suffix](#suffix-operator)|one|yes|matches from stream that have an immediately following extractor match|
-|[Proximal](#proximal-expression)|[near](#near-operator)|one|yes|matches from stream that have a preceding or following extractor match|
-|[Proximal](#proximal-expression)|[precedes](#precedes-operator)|one|yes|matches from stream that have a preceding extractor match|
-|[Proximal](#proximal-expression)|[follows](#follows-operator)|one|yes|matches from stream that have a following extractor match|
-|[N-ary](#nary-expression)|[union](#union-operator)|multiple|no|all matches from all streams (but see description for a detail)|
-|[N-ary](#nary-expression)|[inter](#intersection-operator)|multiple|first|matches from first stream that have the same extent as a match from each other stream|
-|[N-ary](#nary-expression)|[diff](#diff-operator)|multiple|first|matches from first stream that do not have the same extent as any matches from any of the other streams|
-|[Join](#join-expression)|[contains](#contains-operator)|two|first|matches from first stream that contain a match from second stream|
-|[Join](#join-expression)|[overlaps](#overlaps-operator)|two|first|matches from first stream that overlap a match from second stream|
+|[Match](#match-expressions)|[match](#match-operator)|one|no|matches of extractor within extent of stream matches|
+|[Match](#match-expressions)|[select](#select-operator)|one|no|matches of extractor recorded as submatches by stream matches|
+|[Filter](#filter-expressions)|[filter](#filter-operator)|one|yes|matches from stream for which extractor matches within extent of stream match|
+|[Filter](#filter-expressions)|[prefix](#prefix-operator)|one|yes|matches from stream that have an immediately preceding extractor match|
+|[Filter](#filter-expressions)|[suffix](#suffix-operator)|one|yes|matches from stream that have an immediately following extractor match|
+|[Proximal](#proximal-expressions)|[near](#near-operator)|one|yes|matches from stream that have a preceding or following extractor match|
+|[Proximal](#proximal-expressions)|[precedes](#precedes-operator)|one|yes|matches from stream that have a preceding extractor match|
+|[Proximal](#proximal-expressions)|[follows](#follows-operator)|one|yes|matches from stream that have a following extractor match|
+|[N-ary](#n-ary-expressions)|[union](#union-operator)|≥ one|no|all matches from all streams (but see description for a detail)|
+|[N-ary](#n-ary-expressions)|[inter](#intersection-operator)|≥ one|first|matches from first stream that have the same extent as a match from each other stream|
+|[N-ary](#n-ary-expressions)|[diff](#diff-operator)|≥ one|first|matches from first stream that do not have the same extent as any matches from any of the other streams|
+|[Join](#join-expressions)|[contains](#contains-operator)|two|first|matches from first stream that contain a match from second stream|
+|[Join](#join-expressions)|[overlaps](#overlaps-operator)|two|first|matches from first stream that overlap a match from second stream|
 |[Connect](#connect-expressions)|[connects](#connects-operator)|two|no|matches of parse extractor with one end in a match from each input stream|
+
+#### Extent
+
+The "extent" of a match simply refers to the range of tokens covered by a match, 
+from the leftmost token through the rightmost token in the token sequence. 
+(Different kinds of match instances in the [API](VRAPI.md) may represent 
+this differently internally, as described in the discussion of the 
+[`Match`](VRMatch.md) object types.)
 
 #### Filters
 
@@ -155,7 +158,8 @@ for each input stream match.
 Conceptually, some matches from the input stream are "passed through" the filter 
 while others are blocked. In practice, from an [API](VRAPI.md) standpoint, 
 new match object instances are generated, but they always have the same extent 
-as the nominally passed-through input stream matches. 
+as the nominally passed-through input stream matches, and those input stream 
+matches are stored as submatches of the new match instance. 
 
 ### Underscore Expression
 
@@ -169,9 +173,10 @@ from which other coordinator expressions can be built up.
 ### Extractor Expressions
 
 Extractor expressions generate a match stream by applying 
-the named extractor to the base input stream represented by `_`.
+the named extractor to the base input stream, represented by `_`, 
+using the match operator (which is described in the next section).
 
-A coordinator expression of the form 
+That is, a coordinator expression of the form 
 
 ```
 <extractor>
@@ -183,21 +188,47 @@ is shorthand for and completely equivalent to
 match(<extractor>, _)
 ```
 
-The match operator is described in more detail in the next section.
+**Example**
 
-Don't let this convenient shorthand obscure the distinction between 
-`<extractor>` and `<coord_expression>` in the grammar, though.
-Coordinator operator arguments are typed, as in the the grammar rule
+The pattern presented earlier
 
 ```
-<match_expression> -> <match_op> '(' <extractor> ',' <coord_expression> ')'
+money_amount ~ select(bignum, match(money, _))
 ```
 
-and while you can specify an extractor name for the second argument, 
-that's only because an extractor name is allowed by the grammar as 
-a coordinator expression. The converse is not true; you can't use 
-any of the other coordinator expression types as an `<extractor` 
-argument.
+may be more concisely written as
+
+```
+money_amount ~ select(bignum, money)
+```
+
+> **Note**
+>
+> Don't let this convenient shorthand obscure the distinction between 
+> `<extractor>` and `<coord_expression>` in the grammar, though.
+> Coordinator operator arguments are typed, as in the the grammar rule
+>
+> ```
+> <match_expression> -> <match_op> '(' <extractor> ',' <coord_expression> ')'
+> ```
+>
+> and while you can specify an extractor name for the second argument, 
+> that's only because an extractor name is allowed by the grammar as 
+> a coordinator expression, allowing this convenient shorthand. 
+> The converse is not true; you can't use 
+> any of the other coordinator expression types as an `<extractor>` 
+> argument; an extractor name is required.
+> 
+> For example, 
+> 
+> ```
+> money_amount ~ select(match(bignum, _), match(money, _))
+> ```
+> 
+> is not a valid pattern, because the first argument to the select operator 
+> must be an extractor name, not a full coordinator expression, 
+> as shown in the `<match_expression>` grammar rule above (since both `match` 
+> and `select` are `<match_op>`s).
 
 ### Match Expressions
 
@@ -228,12 +259,14 @@ match(my_extractor, _)
 This is a simple invocation of `my_extractor` against the base match stream.
 The matches returned from this coordinator would be have the same extent 
 as the matches from `my_extractor` itself, which might be the name of 
-a token test, phrase expression, or parse expression pattern. 
+a token test, phrase expression, parse expression, coordinator, or 
+frame pattern. 
 
 Instead of being directly associated with the `my_extractor` pattern, 
 these coordinator matches would be associated with the coordinator pattern.  
-In addition, the matches of `my_extractor` would be recorded 
-as *submatches* of the coordinator matches, and could be accessed via 
+In addition, the matches of `my_extractor` would be recorded as 
+[submatches](VRSyntax.md#submatch-capture-and-selection)
+of the coordinator matches, and could be accessed via 
 a `select` coordinator expression.
 
 Thus far, defining such a coordinator adds no real benefit over the
@@ -267,9 +300,10 @@ within matches of `my_other_extractor`, anywhere such matches exist.
 select(<extractor>, <stream>)
 ```
 
-The select operator produces a stream of all submatches corresponding
-to `<extractor>` in the input match stream.  For the product of this
-expression to be non-empty, the input stream typically must be the
+The select operator produces a stream of all 
+[submatches](VRSyntax.md#submatch-capture-and-selection)
+corresponding to `<extractor>` in the input match stream.  For the product 
+of this expression to be non-empty, the input stream typically must be the
 result in part of the application of some extractor referencing
 `<extractor>` as a component.  
 
@@ -283,8 +317,13 @@ all coordinator operators (except `select` itself), not just for `match`.
 The difference between `match` and `select` is that `match` actually 
 performs a matching operation, whereas `select` does not. `select` 
 only retrieves submatches recorded during matching of some pattern that 
-references another pattern, whether that first pattern is a coordinator, 
-parse expression, phrase expression, or token test.
+references another pattern.
+
+In selecting from [frame matches](VRFrames.md), names of frame fields 
+may also be used in place of the `<extractor>` name. 
+(In case of fields that use the same name as patterns, both the field 
+match and any submatches within the frame anchor matches and field 
+matches are returned.)
 
 **Example**
 
@@ -559,6 +598,21 @@ through any match from `<stream1>` whose extent is the same as or
 encloses the extent of some match from `<stream2>`.  Subordinate
 matches from `<stream2>` are recorded in output matches.
 
+Note that it is not necessary to have a `contained_by` operator, 
+as the effect of a hypothetical `contained_by(b, a)` expression 
+can be achieved by either of the the following expressions:
+
+```
+match(b, a)
+select(b, contains(a, b)) 
+```
+
+(Since both `match` and `select` require their first argument to be 
+a pattern name rather than an expression, if the desired `b` is an 
+expression, one can use that expression to define a named pattern, 
+and the name can then be used in `match` or `select`.)
+
+
 #### Overlaps Operator
 
 ```
@@ -584,27 +638,30 @@ them.  There is one connect operator:
 **Basic Form**
 
 ```
-connects(<parse_extractor>, <stream1>, <stream2>)
+connects(<extractor>, <stream1>, <stream2>)
 ```
 
 The `connects` operator provides a means to combine extractors defined
 against the parse tree, via [parse expressions](VRParseExpressions.md), 
 with [phrase-level](VRPhraseExpressions.md) matches.  It considers all pairs 
-of matches in the two input stream, producing output for any pair for which
-`<parse_extractor>` matches a path with end points in the *respective*
-pair members.  When such a path is found, a match object is generated with
-extent spanning the two token end points.  These
+of matches in the two input streams, producing an output match for any pair for 
+which `<extractor>` (which is typically a parse extractor, but need not be) 
+matches a path with start and end points in the *respective* pair members. 
+When such a path is found, this expression returns the
+match of `<extractor>` that enabled the connection.  These
 match objects record the constituent input matches they connect
 for access via `select` or downstream programmatic use.
 
-Note the word *respective* above. While parse operators alone produce
-matches in both directions, the `connects` operator only looks at paths
-starting in the `<stream1>` match and ending in the `<stream2>` match.
-The `connects` operator is not symmetric in those two arguments.
-(However, the `CoordMatch` instances returned from the API for coordinator
-matches always have their begin/end indices in numeric order, while
-`FAArcMatch` instances returned from the API for parse expression matches
-can have indices in reverse order.)
+Note the word *respective* above. While symmetrical parse expressions alone 
+will produce matches in both directions, the `connects` operator only matches 
+paths starting in the `<stream1>` match and ending in the `<stream2>` match, 
+not vice-versa. The `connects` operator is not symmetric in those two arguments.
+
+Note that when the extractor named by the `<extractor>` argument
+is a [parse extractor](VRParseExpressions.md) (the most common
+and useful usage), the resulting match objects behave like parse 
+extractor matches.  In particular, depending
+on how the extractor is defined, they can proceed right to left.
 
 **Examples**
 
@@ -636,7 +693,10 @@ conn1  ~ connects(pobj_prep, match(fries, _), match(cheeseburger, _))
 This example illustrates the non-symmetry of the `connects` operator.
 The parse tree fragment for the phrase "cheeseburger with fries" might look 
 as shown below. In this case, `conn0` and `conn1` would match, but `conn0x`
-would not.
+would not. Also, the `conn0` match would start with "cheeseburger" and end 
+with "fries" (left to right in the phrase "cheeseburger with fries"),
+while the `conn1` match would start with "fries" and end with "cheeseburger"
+(right to left).
 
 ```
 - cheeseburger NN dobj

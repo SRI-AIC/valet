@@ -8,59 +8,182 @@ to_be: { is am are be being was were }i
 # Tests based on part of speech
 ############################################
 
+#
+# Note that part of speech tags are more similar between Stanza and Spacy 
+# than parse tree edge labels are (see below), but (AFAIK) there are still 
+# some differences between the two NLP engines in this area.
+#
+
 determiner: pos[DT]
-adjective:  pos[JJ CD]
+adjective:  pos[JJ JJR JJS CD]
 number:     pos[CD]
 pronoun:    pos[PRP]
+pos_pn:     pos[PRP$]
 noun:       pos[NN NNS NNP NNPS]
 nominal:    &noun or &pronoun
-adverb:     pos[RB]
+adverb:     pos[RB RBR RBS]
 preposition: pos[IN]
 noun_qualifier: &adjective or &qualifying_verb
+money:      pos[$]
+# PRT is probably Stanza; Spacy is RP.
+particle:   pos[PRT] or pos[RP]
 
 # Various verb inflections
+copula: { am are is be been was were re s }i
 verb:            pos[VBG VBZ VBD MD VB VBP VBN]
-auxiliary_verb:  pos[MD]
-qualifying_verb: pos[VBN]
+# auxiliary_verb:  pos[MD]
+auxiliary_verb:  pos[MD] or tag[AUX]
+qualifying_verb: pos[VBN VBG]
 
 
 ##########################################
 # Syntactic relations
 ##########################################
 
-# Only the main verb (or noun headword, if sentence fragment) has this dep
-sentence_root ^ root
+#
+# Note that although Stanza and Spacy use some of the same dependency 
+# tree parse edge labels, they also use some different ones, 
+# In addition, the nesting relationships are sometimes different. 
+#
+# In general, it's probably only possible to make rules that handle 
+# both Stanza and Spacy for a few simple relationships.
+#
+# We'll try to use a prefix or suffix of "sz" for Stanza-specific rules 
+# and "sy" for Spacy-specific rules.
+#
 
-# Include main verbs of all clauses
-clause_root ^ conj* root
 
-# Connects a verb to its subject
+# Verbs considered auxiliary according to dependency tree.
+aux ^ \aux
+_aux_verb : &verb
+# aux_edge ~ connects(aux, verb, _aux_verb)
+aux_verb ~ select(_aux_verb, connects(aux, verb, _aux_verb))
+non_aux_verb ~ diff(verb, aux_verb)
+
+
+# Misc non-semantically-named edge names.
+pobj ^ pobj
+
+# Connects a verb to its subject(s).
 subject ^ nsubj
+subjects ^ conj* nsubj
 
-# Connnects a verb to its (possibly multiple) subjects
-subjects ^ nsubj conj*
+# The alternations (|) in the next few rules are attempts to handle 
+# the dependency labels of both Stanza and Spacy, respectively.
 
-# Connects a verb to its direct object headword
-object ^ obj
+# Connects a passive verb to its subject(s).
+passive_subject ^ nsubj:pass | nsubjpass
+passive_subjects ^ conj* (nsubj:pass | nsubjpass)
 
-# Connects a verb to all conjunctively linked direct objects headword
-objects ^ conj* obj conj*
+# Connects a verb to its direct object(s).
+object ^ obj | dobj
+objects ^ (obj | dobj) conj*
 
-# Connects a verb to its indirect object headword
-iobject ^ obl
-
-# connects a verb to all conjunctively linked indirect object headwords
-iobjects ^ conj* obl conj*
-
-# Connects a noun or adjectival headword with the preposition that governs it
+# Connects a noun or adjectival headword with the preposition that governs it.
 case ^ case
+
+# Strings together words conjunctively.
+conj ^ conj+
+
+# For lack of a better name so far.
+# Note this does not involve the "copula" rule, FWIW.
+copula_object ^ \attr
+copula_objects ^ \attr \conj*
+
+# "X is important and imperative."
+copula_adjectives ^ acomp conj*
+
+# TODO We probably also want rules for copula prepobs, as in 
+# "targets that I thought were on a stop list".
+
+# Noun-verb.
+relcl ^ \relcl \conj*
+acl ^ \acl \conj*
+
+# Verb-verb.
+comp ^ \comp
+ccomp ^ \ccomp \conj*
+xcomp ^ \xcomp \conj*
+advcl ^ \advcl \conj*
+
+# Clausal subject (V-V).
+csubj ^ \csubj \conj*
+
+
+
+# Connects a verb to its indirect object headword (or passive object).
+# This is mostly not right.
+# It's right for Stanza with "She gave the book to me", but for 
+# "She gave me the book", Stanza uses "iobj".
+# For Spacy, when used with a verb at one end, this finds what I'd 
+# loosely call adverbials.
+# Spacy uses "dative" for indirect objects, both with and without 
+# "to", but it connects to the "to" when that is present.
+iobject_old ^ obl | prep pobj
+iobjects_old ^ (obl | prep pobj) conj*
+
+
+# A start at correct rules for indirect objects.
+# I'm finding that either there are often errors in both Stanza and Spacy 
+# parsing of indirect objects, or I don't understand what their scheme is. 
+# E.g., try sentences like the ones above and/or plural ones like 
+# "She gave John and me the books", "She gave the books to John and me."
+# In addition, the Spacy rules below can connect to the "to", 
+# so you'll need to control for that in downstream rules 
+
+# With Stanza, iobj is used with no "to", but obl is used
+# with "to" (and case is used on the "to", which depends on the obl).
+iobj ^ \iobj \conj*
+obl  ^ \obl \conj*
+sz_iobjects ^ @iobj | @obl
+
+# With Spacy, dative alone is used with no "to", but dative 
+# and pobj are used with "to".
+dative ^ \dative \conj*
+dative_pobjs ^ \dative \pobj \conj*
+sy_iobjects ^ @dative | @dative_pobjs
+
+iobjects ^ @sz_iobjects | @sy_iobjects
+
+
+# Rules derived from the original incorrect "iobjects" rules, 
+# which did capture useful things, though mostly not indirect objects. 
+# Names are subject to change.
+sy_prepobj ^ prep pobj
+sy_prepobjs ^ prep pobj conj*
+
+# This finds what I'd loosely call adverbials.
+prepobjs ^ @sy_prepobjs
+
+
+# "... a REST service for scoring molecules ..."
+sy_prepcomp ^ prep pcomp
+sy_prepcomps ^ prep pcomp conj*
+
+prepcomps ^ @sy_prepcomps
 
 
 ##########################################
 # Chunks
 ##########################################
 
-base_noun_phrase -> &pronoun | &determiner? &noun_qualifier* &noun+
+# The entire token sequence.
+sentence ~ _
+
+# This is to rule out as qualifiers verbs that are functioning as verbs
+# E.g., "baking bread" can either refer to the action of baking or
+# to bread that is baking.  We want to exclude "baking" in the former case.
+# In the former case, baking is a "noun-governing verb"; in the latter case 
+# it's a "noun-modifying verb" (see noun_modifying_verb below).
+noun_qual <-
+  noun_governing_verb ~ select(verb, connects(object, verb, noun))
+  noun_qual ~ diff(noun_qualifier, noun_governing_verb)
+
+head_noun: &noun or &money or &number
+base_noun_phrase -> &pronoun | 
+     (&determiner | &pos_pn)? &number?
+     (&adverb* &noun_qual.noun_qual+)?
+     &noun* &head_noun
 
 # A base noun phrase governed by some preposition
 cased_bnp ~ select(base_noun_phrase, 
@@ -69,7 +192,36 @@ cased_bnp ~ select(base_noun_phrase,
 # A base noun phrase *not* governed by a preposition
 top_level_bnp ~ diff(base_noun_phrase, cased_bnp)
 
+clause_root ~ union(ROOT, select(ANY, connects(conj, ROOT, ANY)))
+nominal_sentence_root ~ inter(ROOT, noun)
 
+
+# Adjective phrases that don't modify nouns can occur in copula sentences.
+# TODO I don't yet know how to both pick up adverbs that apply to the adjective,
+# and avoid picking up adverbs that apply to the copula.
+base_adjective_phrase -> &adverb* &adjective
+
+
+# In "The baking bread is in the oven.", baking is a noun-modifying verb.
+verb_hw <-
+  amod ^ amod
+  noun_modifying_verb ~ select(verb, connects(amod, verb, noun))
+  verb_hw ~ diff(verb, noun_modifying_verb, aux_verb)
+
+head_verb ~ verb_hw.verb_hw
+base_verb_phrase -> &adverb* &auxiliary_verb* 
+                    ( &adverb* &qualifying_verb? &head_verb
+                    | &copula &adverb* &head_verb )
+                    &particle?
+
+verbal_sentence_root ~ inter(ROOT, verb)
+verbal_clause_root ~ union(verbal_sentence_root, 
+                      select(verb, connects(conj, verbal_sentence_root, verb)))
+
+# Non-root
+verbal_sentence_hw ~ head_verb
+verbal_clause_hw ~ union(verbal_sentence_hw, 
+                      select(verb, connects(conj, verbal_sentence_hw, verb)))
 
 ####################################
 # Coordinators selecting relation arguments
@@ -80,4 +232,3 @@ verb_subject  ~ select(base_noun_phrase,
 
 verb_subjects ~ select(base_noun_phrase, 
                        connects(subjects, verb, base_noun_phrase))
-

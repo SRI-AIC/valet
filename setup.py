@@ -1,4 +1,4 @@
-# Copyright (c) 2020 SRI International.  Use of this material is subject to the terms specified in the license located at /LICENSE.txt
+# Copyright (c) 2020-2024 SRI International.  Use of this material is subject to the terms specified in the license located at /LICENSE.txt
 #
 
 import setuptools
@@ -22,10 +22,13 @@ setuptools.setup(
   author='SRI International',
   install_requires=[
       "plac>=1.3.0",
-      "spacy>=3.2.0"
+      "spacy>=3.2.0",
+      "conllu>=4.4.1",
+      "frozendict",
+      "ordered-set"
   ],
   package_dir={"": "src"},
-  packages=["valetrules", "nlpcore"],
+  packages=["valetrules", "valetrules.gui", "valetrules.test", "nlpcore"],
   include_package_data=True,
   license=license,
   platforms='any'

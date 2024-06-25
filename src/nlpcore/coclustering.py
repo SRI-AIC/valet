@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import plac
 import math
@@ -1818,6 +1818,12 @@ class SingleCoclustering(object):
     Applies equally to by_doc and by_adjacency coclusterings.
     """
 
+    # There are a lot more we don't currently declare.
+    x_labels: Dict[int, str]
+    y_labels: Dict[int, str]
+    xy_total: int
+    yx_map: Dict[int, List[Any]]  # name seems off?
+
     # TODO May want to put the _label stuff at the DoubleCoclustering level?
     # It tends to be used with bydoc clusterings.
     def __init__(self, input_directory, 
@@ -1901,7 +1907,7 @@ class SingleCoclustering(object):
         #   appear in. This is only populated if the target_label and
         #   non_target_label parameters are provided at construction.
         self.yx_map, self.x_index_to_y_index_cooc, self.xy_total, self.target_doc_count, \
-        self.non_target_doc_count = self.read_xy_cooc()
+            self.non_target_doc_count = self.read_xy_cooc()
 
         # - self.y_count is the number of documents in the co-occurrence
         #   data. This is also derivable from

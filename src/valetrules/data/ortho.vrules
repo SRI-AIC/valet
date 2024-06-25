@@ -1,5 +1,7 @@
 
 # Matches any token.  Use with care, since it generates a lot of matches.
+# There is now an "ANY" built-in token test rule that is a little more
+# efficient, but most of the same caveats apply.
 any: /./
 
 alpha:       /^[a-z]+$/i
@@ -11,7 +13,14 @@ cap:         /^[A-Z]/
 allcap:      /^[A-Z]+$/
 initial:     /^[A-Z]$/
 
+# The following token tests all need to be used in phrase expressions
+# instead of the corresponding literal characters, since those characters
+# all have special meaning in phrase expressions.
 lparen: { ( }
 rparen: { ) }
-
-
+pipe: { | }
+question_mark: { ? }
+asterisk: { * }
+plus: { + }
+ampersand: { & }
+at_sign: { @ }

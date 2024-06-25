@@ -8,8 +8,8 @@ the following syntax:
 <name> -> <expression>
 ```
 
-Literals in the expression (`<token>s`) in the grammar below) can be treated case-insensitively by prefixing 
-the `->` delimiter with `i`.
+Literals in the expression (`<token>s`) in the grammar below) can be treated 
+case-insensitively by prefixing the `->` delimiter with `i`.
 
 ```
 <name> i-> <expression>
@@ -42,41 +42,43 @@ in the phrase expression statement.)
 ```
 <atom> -> '(' <expression> ')'         # Subexpression
         | <token>
-        | <test_reference>
-        | <phrase_reference>
+        | <reference>
 ```
 ```
 <token>            -> <literal>        # Matches literally
 ```
 ```
-<test_reference>   -> '&'<identifier>  # Reference to token test
-```
-```
-<phrase_reference> -> '@'<identifier>  # Reference to other phrase expression
+<reference>        -> '&'<identifier>  # Reference to other named pattern
+                    | '@'<identifier>
 ```
 
-This defines a more or less standard regular expression syntax, but
-is applied to token sequences rather than character sequences.
+This defines a more or less standard regular expression syntax, but one 
+which is applied to token sequences from the input text rather than character 
+sequences from the text.
 
-A 'token' is any string of word characters or single
+In the grammar above, `<literal>` is referring to tokens from the rule language 
+patterns (not to tokens from the input text that the rules are applied to). 
+In this context, a literal is any string of word characters or single
 characters of punctuation that does not have a special meaning in the
 grammar.  When encountering such an element, the expression
 interpreter treats it as a literal test.  In other words, a particular
 token embedded in some token sequence must match it exactly, character
 by character, for the element to match.  
 
-An 'identifier' is a sequence of word (\w) characters as defined by 
+An `<identifier>` is a sequence of word (\w) characters as defined by 
 the Python regular expression module, possibly with embedded '.' characters 
 indicating following names from import statements (for example,
-[`bar.baz.ext`](docs/VRImports.md)).
+[`bar.baz.ext`](VRImports.md)).
+Whitespace is not permitted around the '.', nor between the reference 
+prefix `&` or `@` and the identifier.
+
+Historically, the `&` prefix was required for references to token tests, 
+while the `@` prefix was required for references to other kinds of 
+named pattern. The two prefixes may now be used interchangeably, 
+but when writing rules we often keep to the original style for clarity.
 
 As with token test Boolean expressions, subexpressions may be nested 
 in parentheses for clarity or to override standard precedence.
-
-Historically, the `&` prefix was required for references to token tests, 
-while the `@` prefix was required for references to phrase expressions 
-and parse expresssions. However, the two prefixes may now be used 
-interchangeably.
 
 ## Example
 
@@ -85,12 +87,10 @@ For a concrete example, consider the following statemements:
 ```
 # A number token
 num : /^\d+$/
-```
-```
+
 # A numeric expression, possibly with commas and/or decimal point
 bignum -> &num ( , &num ) * ( . &num ) ?
-```
-```
+
 # A currency recognizer
 money -> $ @bignum
 ```
@@ -108,11 +108,12 @@ The `money` expression references the `bignum` expression to implement
 an extractor for (US) currency expressions (using a literal test for
 `$`).
 
-## Submatch capture
+## Submatch capture and selection
 
-In addition to potentially enhancing the clarity of the model,
-this use of named subexpressions enables submatch capture.  The object
-created from some match of the `money` expression also tracks where
+In addition to potentially enhancing the clarity and modularity of the model,
+this use of named subexpressions enables 
+[submatch capture and selection](VRSyntax.md#submatch-capture-and-selection). 
+The object created from some match of the `money` expression also tracks where
 the internally referenced `bignum` pattern matches.  Thus, if downstream
 expressions or code wants the numeric portion of the currency expression,
 it can query for the portion that matches `bignum`.  Further documentation
@@ -123,10 +124,11 @@ describes how to achieve this elegantly with
 ## Predefined phrase identifiers
 
 There are two predefined phrase identifiers, `START` and `END`, which define
-zero-width matches at the start and end of a token sequence, respectively.
+zero-width token subsequence matches at the start and end of a token sequence, 
+respectively.
 These serve the same purpose for phrase expressions as the `^` and `$`
-characters do for regular expressions, as in the regular expression token test
-statement above: `num : /^\d+$/`.
+characters do for standard character-based regular expressions, as in 
+the regular expression token test statement above: `num : /^\d+$/`.
 For example, `all_numbers -> @START &num+ @END`.
 
 ## Phrase lexicons

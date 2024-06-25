@@ -1,6 +1,7 @@
 import re
 
 
+# AFAIK this is unfinished.
 class Macro(object):
 
     ARGUMENT_PATTERN = r'^\w+$'

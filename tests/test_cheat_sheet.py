@@ -1,9 +1,11 @@
-import unittest
 import io
 import os
 from pathlib import Path
-from nlpcore.tokenizer import PlainTextTokenizer
+import unittest
+from ordered_set import OrderedSet
+
 from nlpcore.sentencer import Sentencer
+from nlpcore.tokenizer import PlainTextTokenizer
 from valetrules.manager import VRManager
 
 
@@ -39,9 +41,11 @@ class TestCheatSheet(unittest.TestCase):
         vrm.parse_file(self.current_path / 'cheat_sheet.vrules')
 
         # make sure all the expressions were parsed
-        self.assertEqual(len(list(vrm.fa_expressions)), 1)  # 1 imported
+        builtins = set(vrm.builtins())
+        self.assertEqual(len(builtins), 1+3)  # 1 token test, 3 phrase (fa)
+        self.assertEqual(len(list(vrm.fa_expressions)), 1+3)  # 3 built-in
         self.assertEqual(len(list(vrm.fa_lexicon_imports)), 0)
-        self.assertEqual(len(list(vrm.test_expressions)), 26)  # 1 imported
+        self.assertEqual(len(list(vrm.test_expressions)), 26+1)  # 1 built-in
         self.assertEqual(len(list(vrm.import_expressions)), 2)
         self.assertEqual(len(list(vrm.coord_expressions)), 0)
         self.assertEqual(len(list(vrm.dep_fa_expressions)), 0)
@@ -52,9 +56,12 @@ class TestCheatSheet(unittest.TestCase):
         ascii_tokens = self.get_tseq_and_normed("ascii_test_text.txt")
 
         # Scan for expression matches
-        patterns = list(vrm.test_expressions) + list(vrm.fa_expressions)
-        for pattern in patterns:
-            print(pattern)
+        # This is designed to be eyballed, so enable printing.
+        # But sometimes we don't want all that output, so enable disabling.
+        do_print = False
+        patterns = OrderedSet(list(vrm.test_expressions) + list(vrm.fa_expressions)) - builtins
+        for pattern in patterns:  # pattern names
+            if do_print: print(pattern)
             match_set = set()
             for (tseq, normed) in wiki_tokens:
                 for match in vrm.scan(pattern, tseq):
@@ -62,7 +69,7 @@ class TestCheatSheet(unittest.TestCase):
             for (tseq, normed) in ascii_tokens:
                 for match in vrm.scan(pattern, tseq):
                     match_set.add(normed[match.start_offset():match.end_offset()])
-            print(match_set)
+            if do_print: print(match_set)
 
         print("test_cheat_sheet done")
 

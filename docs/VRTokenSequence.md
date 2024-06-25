@@ -1,4 +1,4 @@
-# The `TokenSequence` class
+# The TokenSequence class
 
 ## Background
 
@@ -10,14 +10,15 @@ normalization, depending on the application, such as case
 normalization, stemming, contraction splitting, stopword removal,
 etc., each of which reduces the resemblance of the internal
 representation to the text a human sees on the page.  The purpose of
-the `TokenSequence` class is to span this divergence.  Code that uses
+the `TokenSequence` class (defined in the `nlpcore` package) is to span 
+this divergence.  Code that uses
 `TokenSequence` conveniently sees an array of strings, each
 representing a normalized lexeme, but once individual words or word
 spans are selected by that code, the `TokenSequence` provides the
 information needed to identify the corresponding textual regions in
 the input.
 
-## `TokenSequence`
+## TokenSequence class
 
 This is accomplished entirely through member variables.  A
 `TokenSequence` provides no methods that do much of value for
@@ -40,7 +41,7 @@ treated as a list of words by code that has no need for access to the
 text from which they were derived.  For example, if `tokseq` refers to
 a `TokenSequence`, then `tokseq[3]` returns the word at index 3.
 
-## `AnnotatedTokenSequence`
+## AnnotatedTokenSequence class
 
 Syntax and other forms of derived information, such as named entity
 constituency, are recorded in an `AnnotatedTokenSequence`, a subclass

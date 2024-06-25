@@ -9,7 +9,7 @@ of tokens.  The following types of tests are supported:
 |----|-------|-----------|
 |**Regular Expression**|`capitalized : /^[A-Z]/`|tests for starting with capital letters A through Z|
 |**Membership**|`article : { a an the }`|tests for membership in a set|
-|**Substring**|`occur : <occur>`|tests for an occurrence of a string|
+|**Substring**|`occur : <occur>`|tests for an occurrence of a substring|
 |**Lookup**|`noun : pos[ NN NNS ]`|looks up tags in indicated annotation, here parts of speech|
 
 <!-- ```
@@ -31,7 +31,8 @@ noun : pos[ NN NNS ]
 
 <!-- We briefly describe each of these tests in turn and explain how they -->
 <!-- can be combined in powerful Boolean expressions. --> 
-Below, these tests are briefly described, with explanations of how they can be combined in powerful Boolean expressions.
+Below, these tests are briefly described, with explanations 
+of how they can be combined in powerful Boolean expressions.
 
 ## Regular Expression Tests
 
@@ -91,33 +92,38 @@ annotations are arbitrary.
 
 Interpretation of this kind of test is similar to that used for
 membership tests above, except instead of the literal token being
-tested for membership, the indicated annotation is tested.  For
-example, the expression `pos[ NN NNS ]` specifies that the tag found
+tested for membership, the indicated annotation type (a.k.a "layer") 
+is tested. 
+For example, the expression `pos[ NN NNS ]` specifies that the tag found
 in the `pos` layer should be tested for membership in the set `{ NN
-NNS }`.  If the `pos` layer stores part-of-speech tags assigned by a
-3rd-party module, this would have the effect of selecting nouns.
+NNS }`.  If the `pos` layer stores part-of-speech tags assigned by an 
+NLP module, this would have the effect of selecting nouns.
 
 ## References
 
 Any token test may be referenced by the definition of another token
-test by prefixing its name with `&`.  For example:
+test by prefixing its name with `&` or `@`.  For example:
 
 ```
 noun2 : &noun
 myext : &model.ext
 ```
 
-The above two definitions have the effect of defining new tests that
-are equivalent to the test they reference.  (See [Import Statements](./VRImports.md) for the meaning of the `.` syntax.) Note that because the
-references are evaluated at runtime, the referenced test need not be
-defined before the referencing test is defined.  This ability to
-reference is useful in the context of Boolean expressions and 
-[phrase expressions](./VRPhraseExpressions.md).
-
 Historically, the `&` prefix was required for references to token tests, 
 while a `@` prefix was required for references to phrase expressions 
-and parse expresssions. However, the two prefixes may now be used 
-interchangeably.
+and parse expresssions. The two prefixes may now be used interchangeably, 
+but when writing rules we often keep to the original style for clarity.
+
+The above two definitions have the effect of defining new tests that
+are equivalent to the test they reference. 
+(See [Import Statements](./VRImports.md) for the meaning of the `.` syntax.) 
+This ability to
+reference is useful in the context of Boolean expressions (below) and 
+[phrase expressions](./VRPhraseExpressions.md).
+
+Note that because the
+references are evaluated at runtime, the referenced test need not be
+defined before the referencing test is defined. 
 
 ## Boolean Combinations
 

@@ -35,6 +35,12 @@ def main(pattern_file: ("File containing VR definitions", "positional", None, st
     pattern_names = re.split(r'\s+', pattern_names)
     pattern_name = pattern_names[0]
 
+    # Inform data source about the needed NLP requirements
+    requirements = set()
+    for name in pattern_names:
+        requirements |= vrm.requirements(name)
+    data_source.set_requirements(requirements)
+
     for source, tseqs in data_source.token_sequences():
         print("SOURCE:", source)
         if markup:
@@ -65,7 +71,7 @@ from valetrules.manager import VRManager
 from nlpcore.tseqsrc import TokenSequenceSource
 ```
 
-As described in the page on [terminology](VRTerminology.md), the
+As described in the section on [terminology](VRSyntax.md#valet-rules-terminology), the
 manager object imported in the first line above is the primary entry
 point into Valet Rules.  The other nlpcore import provides a utility class
 to aid in converting the input text 

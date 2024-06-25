@@ -1,14 +1,18 @@
 from cmd import Cmd
+import json
 from pathlib import Path
 import readline
 import re
+
 from console.utils import clear_screen, clear_line
 from console.screen import sc
 from console import fg, fx
 from console.detection import get_size
+import plac
+
 from nlpcore.tokenizer import PlainTextTokenizer
+from nlpcore.tseqsrc import TokenSequenceSource
 from .manager import VRManager
-import json
 
 
 class Console(Cmd):
@@ -66,7 +70,7 @@ class Console(Cmd):
 
     def cmdloop(self):
         clear_screen(2)
-        print(screen.mv(0,0))
+        print(sc.move_to(0,0))
         super().cmdloop()
 
 
@@ -319,7 +323,7 @@ class Console(Cmd):
         return [ str(p) for p in d.iterdir() if p.name.startswith(name) ]
 
     def extractor_completion(self, prefix):
-        return sorted(e for e in self.vrm.defined_extractors() if e.startswith(prefix))
+        return sorted(e for e in self.vrm.all_extractor_names() if e.startswith(prefix))
 
     def show_expressions(self, expressions, sep):
         if len(expressions) == 0:
@@ -367,6 +371,27 @@ class Console(Cmd):
             dstring += "\n" + fx.bold("(truncated %d lines)" % (len(lines) - maxlines))
         print(dstring)
         clear_screen(0)
-        print(screen.mv(3, 3))
+        print(sc.move_to(3, 3))
         clear_line(0)
-        print(screen.mv(3, 0))
+        print(sc.move_to(3, 0))
+
+if __name__ == '__main__':
+
+    def main(pattern_file: ("File containing definitions", "option", "s", str),
+             source_file: ("Name of the text source", "option", "t", str),
+             # source_data_type: ("Type of the input", "option", "y", str) = "text",
+             # nlp_engine: ("NLP module to use", "option", "x", str) = 'stanza'
+             ):
+
+        # if nlp_engine == 'off':
+        #     nlp_engine = None
+
+        # data_source = TokenSequenceSource.source_for_type(source_data_type, source_file,
+        #                                                   nlp_engine=nlp_engine)
+
+        cnsl = Console(pattern_file=pattern_file,
+                       target_file=source_file
+                       )
+        cnsl.cmdloop()
+
+    plac.call(main)

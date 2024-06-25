@@ -11,6 +11,7 @@ def main(pattern_file: ("File containing VR definitions", "positional", None, st
          pattern_names: ("Names of the pattern to apply", "positional", None, str),
          markup: ("Action: Show markup", "flag", "m"),
          extract: ("Action: List extractions", "flag", "e"),
+         bare_extract: ("Action: List bare extractions", "flag", "b"),
          deppaths: ("Action: Show dependency paths", "flag", "d"),
          grep: ("Action: Scan for matching records", "flag", "g"),
          conll: ("Action: Produce CoNLL-style output", "flag", "c"),
@@ -21,7 +22,7 @@ def main(pattern_file: ("File containing VR definitions", "positional", None, st
          source_arguments: ("Option: Extra args to provide to the token sequence source", "option", "a", str) = None,  # usually -g, but that's taken above
          ):
 
-    if not (markup or extract or deppaths or conll or grep):
+    if not (markup or extract or deppaths or conll or grep or bare_extract):
         print("No useful action specified")
         exit()
 
@@ -49,13 +50,14 @@ def main(pattern_file: ("File containing VR definitions", "positional", None, st
     requirements = set()
     for name in pattern_names:
         requirements |= vrm.requirements(name)
-    data_source.add_requirements(requirements)
+    data_source.set_requirements(requirements)
 
     for source, tseqs in data_source.token_sequences():
         if grep:
             for tseq in tseqs:
                 if vrm.search(pattern_name, tseq):
                     print(source)
+                    print(tseq.tokenized_text())
                     break
         if markup:
             print("SOURCE:", source)
@@ -76,6 +78,10 @@ def main(pattern_file: ("File containing VR definitions", "positional", None, st
         if conll:
             output = vrm.conll_from_token_sequences(pattern_names, tseqs)
             print(output)
+        if bare_extract:
+            extractions = vrm.extract_from_token_sequences(pattern_name, tseqs)
+            for e in extractions:
+                print(e)
 
 
 plac.call(main)

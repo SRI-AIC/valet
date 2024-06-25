@@ -27,7 +27,7 @@ and is not processed as part of a rule.
 All VR statements defining patterns have the following syntax:
 
 ```
-<name> <delimiter> <expression>
+<name> <delimiter> <binding>? <expression>
 ```
 
 *Name* is a sequence of "word" characters, i.e.,
@@ -39,21 +39,37 @@ The structure of the `<expression>` value depends on the type of pattern,
 which is signaled by the `<delimiter>` value, a special character sequence.
 
 The following statement types are supported; note that names of statement 
-types are linked to further documentation.  
+types are linked to further documentation. 
+Because statements can reference other statements, the statement types below 
+are listed in the most logical order that best reflects the order in which 
+those documentation sections should be read for ease of understanding.
 
-|Statement Type|Delimiter|Pattern Example|
-|----|---|---------|
-|[Import Statement](VRImports.md)|`<-`|`other_definitions <- /path/to/my/file`|
-|[Token Test](VRTokenTests.md)|`:`|`article : { a an }`|
-|[Phrase Expression](VRPhraseExpressions.md)|`->`|`target -> &article ( test \| experiment )`|
-|[Parse Expression](VRParseExpressions.md)|`^`|`prep_phrase ^ prep pobj`|
-|[Coordinator Expression](VRCoordinators.md)|`~`|`important_test ~ near(prep_phrase, 5, 1, match(target, _))`|
-|[Frame Expression](VRFrames.md)|`$`|`hframe $ frame(hiring, employer=hsubj name, employee=hobj name)`|
+|Statement Type|Delimiter| Pattern Example                                                              |
+|----|---|----------------------------------------------------------------------------------------------|
+|[Import](VRImports.md)|`<-`| `other_definitions <- /path/to/my/file`                         |
+|[Token Test](VRTokenTests.md)|`:`| `article : { a an }`                                                |
+|[Phrase](VRPhraseExpressions.md)|`->`| `np -> &article? &adj* &noun+`                       |
+|[Parse](VRParseExpressions.md)|`^`| `prep_phrase ^ prep pobj`                               |
+|[Coordinator](VRCoordinators.md)|`~`| `mycoord ~ near(prep_phrase, 5, np)`                  |
+|[Frame](VRFrames.md)|`$`| `hframe $ frame(hiring, employer=hsubj name, employee=hobj name)` |
 
-Note that there can be certain letters attached to the basic delimiters 
-shown above. For example, there is a case-insensitive version of the `->` 
-phrase expression delimiter, `i->`. These are described further in the 
-relevant sections.
+Note that there can be certain qualifiers attached to the left side of 
+some of the basic delimiters shown above. For example, there is a case-
+insensitive version of the `->` phrase statement delimiter, `i->`. 
+These are described further in the relevant sections.
+
+An optional [binding](VRBinding.md) qualifier, placed between the delimiter 
+and the expression, supports on-the-fly rebinding of extractor names 
+in the interest of greater rule modularity and re-use.
+
+Pattern definitions may reference other named patterns defined earlier 
+or later in the file, or defined in import statements defined earlier 
+or later in the file.
+
+Named pattern definitions may not recursively reference their own names, 
+whether directly, or indirectly via the names of other patterns that 
+directly or indirectly reference them. 
+Doing so will generally cause recursion errors when the pattern is applied.
 
 
 # Valet Rules Terminology
@@ -79,7 +95,9 @@ text -- a sentence, a paragraph, a document -- though smaller units are
 preferred, as they result in more efficient execution.  At its most
 basic, a **match** is a subsequence of the input, represented
 internally via pointers to the input sequence and the **begin** and
-**end** tokens of the subsequence.
+**end** tokens of the subsequence.  The **extent** of a match is 
+defined to be the token range of the matched subsequence. 
+
 
 The patterns that Valet Rules interprets are typically authored by a
 human operator and encoded as **statements** in a **source file**.  As
@@ -107,10 +125,10 @@ that operate over the syntactic **parse tree**.  And there are
 expressions](VRCoordinators.md)) that provide a layer of functionality
 on top of the lower-level extractors.
 
-A manager can be asked to apply an extractor and produce a **stream**
-(sequence) of matches.  All coordinators take at least one **input stream**
-(consisting of a sequence of **input matches**) and produce an
-**output stream** (consisting of a sequence of **output matches**).
+A manager can be asked to apply an extractor to a token sequence and produce 
+a **stream** (sequence) of matches.  All coordinators take at least one 
+**input stream** (consisting of a sequence of **input matches**) and produce 
+an **output stream** (consisting of a sequence of **output matches**).
 Some coordinators also take the name of an extractor, which is applied
 in some way to the input stream.  These are generally referred to as
 **named extractors**, to distinguish them from stream expressions.
@@ -118,3 +136,43 @@ When this term is used, it typically refers to one of the parameters
 of a coordinator, signalling that this parameter should be given an
 extractor name.
 
+## Submatch Capture and Selection
+
+Because the concepts of **submatch capture** and **selection** are so key 
+to the way Valet works, we will mention them here before presenting 
+the specifics in other documentation sections, starting in the 
+[Phrase Expression](VRPhraseExpressions.md) section.
+
+Among other benefits, submatch capture allows you to define your rules 
+in such a way as to allow matching of a referenced extractor 
+**only when the match occurs _in a particular context_** defined 
+by the referencing extractor. 
+[Coordinator expressions](VRCoordinators.md) 
+provide additional ways to achieve context-sensitive matching.
+
+The [Phrase Expression](VRPhraseExpressions.md) section shows an example 
+where a numeric money amount can be identified as such, and distinguished 
+from non-money numeric occurrences, based on the numeric match occurring 
+in the context of an immediately preceding dollar sign. 
+
+The **general rule** of submatch capture and selection is that **submatches 
+of any named extractor `ex2` referenced directly or indirectly by another 
+named extractor `ex1` can be **_selected_** via the 
+[coordinator expression](VRCoordinators.md) `select(ex2, ex1)`**.
+
+Here **submatch** refers to a match of a referenced extractor 
+(`ex2` in this case) obtained while matching the referencing extractor 
+(here `ex1`). This lets you use `ex1` to define a context for `ex2` matches, 
+and **access just those contextual submatches** via the select operator 
+with `select(ex2, ex1)`, while still accessing **any** `ex2` matches 
+irrespective of context via just the name `ex2`.
+
+For example, in the phrase statement example from the table above, 
+`np -> &article? &adj* &noun+`, matches of `np` will capture, as sub-matches, 
+matches of `article`, `adj`, and `noun` that occur together in the 
+sequence shown.
+
+There are a few exceptions to the capture aspect of the above general rule. 
+For example, submatches are not captured when token tests reference other 
+token tests, nor when parse expressions reference token tests. Such captures 
+would rarely be useful.

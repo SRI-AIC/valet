@@ -1,6 +1,6 @@
 from math import sqrt
 import plac
-from nlpcore.tseqsrc import DirectorySource
+from nlpcore.tseqsrc import PlainDirectorySource
 
 
 class Distribution:
@@ -193,7 +193,7 @@ class TermCooccurrence:
 if __name__ == '__main__':
 
     def main(indir, outdir, window=1):
-        source = DirectorySource(indir)
+        source = PlainDirectorySource(indir)
         cooc = TermCooccurrence(window=window, verbose=True, min_frequency=20)
         print("Tabulating")
         cooc.count(source)

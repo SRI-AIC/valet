@@ -4,7 +4,7 @@ eper: ner[E-PER E-PERSON]
 sper: ner[S-PER S-PERSON]
 per_tag: ner[B-PER I-PER E-PER S-PER B-PERSON I-PERSON E-PERSON S-PERSON]
 
-person -> &sper | &bper &iper* &eper
+person -> &sper | &bper &iper* &eper?
 
 bgpe: ner[B-GPE]
 igpe: ner[I-GPE]
@@ -12,7 +12,7 @@ egpe: ner[E-GPE]
 sgpe: ner[S-GPE]
 gpe_tag: ner[B-GPE I-GPE E-GPE S-GPE]
 
-gpe -> &sgpe | &bgpe &igpe* &egpe
+gpe -> &sgpe | &bgpe &igpe* &egpe?
 
 bloc: ner[B-LOC]
 iloc: ner[I-LOC]
@@ -20,7 +20,7 @@ eloc: ner[E-LOC]
 sloc: ner[S-LOC]
 loc_tag: ner[B-LOC I-LOC E-LOC S-LOC]
 
-location -> &sloc | &bloc &iloc* &eloc
+location -> &sloc | &bloc &iloc* &eloc?
 
 place -> @gpe | @location
 
@@ -30,7 +30,7 @@ efac: ner[E-FAC]
 sfac: ner[S-FAC]
 fac_tag: ner[B-FAC I-FAC E-FAC S-FAC]
 
-facility -> &sfac | &bfac &ifac* &efac
+facility -> &sfac | &bfac &ifac* &efac?
 
 borg: ner[B-ORG]
 iorg: ner[I-ORG]
@@ -38,7 +38,14 @@ eorg: ner[E-ORG]
 sorg: ner[S-ORG]
 org_tag: ner[B-ORG I-ORG E-ORG S-ORG]
 
-organization -> &sorg | &borg &iorg* &eorg
+organization -> &sorg | &borg &iorg* &eorg?
+
+bnorp: ner[B-NORP]
+inorp: ner[I-NORP]
+enorp: ner[E-NORP]
+snorp: ner[S-NORP]
+
+group -> &snorp | &bnorp &inorp* &enorp?
 
 bcard: ner[B-CARDINAL]
 icard: ner[I-CARDINAL]
@@ -46,7 +53,7 @@ ecard: ner[E-CARDINAL]
 scard: ner[S-CARDINAL]
 card_tag: ner[B-CARDINAL I-CARDINAL E-CARDINAL S-CARDINAL]
 
-cardinal -> &scard | &bcard &icard* &ecard
+cardinal -> &scard | &bcard &icard* &ecard?
 
 # Other tags: NORP (nat/rel/pol group),  
 # PRODUCT (sp?), EVENT (sp?), WORK OF ART (sp?), LAW, LANGUAGE (sp?),

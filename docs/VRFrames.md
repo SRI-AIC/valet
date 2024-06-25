@@ -79,7 +79,8 @@ hframe $ frame(hiring,
                employer=name,
                employee=name)
 ```
-because submatch selection is not limited to immediate submatches of a given match, but submatches of submatches, etc.
+because submatch selection is not limited to immediate submatches 
+of a given match, but includes submatches of submatches, etc.
 
 But the above rule would find the `name` rule matches for both the hirer
 and the hiree (if both are mentioned), and associate _both_ matches with
@@ -100,7 +101,8 @@ the original rule also works in the case of sentences like
 "McDonald's is hiring!" or "Tom Smith got hired yesterday.",
 where only one of the hirer or hiree is mentioned. 
 The `hframe` rule would generate a frame for these sentences,
-but the matches associated with one of the fields (employee or employer, respectively) would be an empty set.
+but the matches associated with one of the fields (employee or employer, 
+respectively) would be an empty set.
 
 ## Additional information
 
@@ -108,6 +110,3 @@ Frame matches are accessible via the [API](./VRAPI.md)
 and via scripts such as `vrframes.py`.
 [vrgui](./VRGui.md) will print the frame extractions to the terminal window
 when the selected rule is a frame statement.
-
-
-NOTE: Frames do not currently handle references to imported pattern names.

@@ -3,10 +3,10 @@ import csv
 import re
 
 
-from .tseqsrc import DirectorySource, TokenSequenceSource, CsvFileSource
+from .tseqsrc import PlainDirectorySource, PlainTokenSequenceSource, CsvFileSource
 
 
-class ASEDEmailSource(DirectorySource):
+class ASEDEmailSource(PlainDirectorySource):
 
     NAME = 'asedemail'
 
@@ -14,7 +14,7 @@ class ASEDEmailSource(DirectorySource):
         super().__init__(source_name, filter_regex=(filter_regex or r'.*\.txt$'), **kwargs)
 
 
-class D3MTextSource(TokenSequenceSource):
+class D3MTextSource(PlainTokenSequenceSource):
 
     NAME = 'd3m'
 
@@ -89,7 +89,7 @@ class D3MTextSource(TokenSequenceSource):
                 pass
 
 
-class CtakesSource(TokenSequenceSource):
+class CtakesSource(PlainTokenSequenceSource):
 
     NAME = 'ctakes'
 
@@ -99,7 +99,7 @@ class CtakesSource(TokenSequenceSource):
         yield fname, token_sequence_from_ctakes_json(fname)
 
 
-class PatentCSVSource(TokenSequenceSource):
+class PatentCSVSource(PlainTokenSequenceSource):
 
     NAME = 'patents'
 
@@ -120,7 +120,7 @@ class PatentCSVSource(TokenSequenceSource):
                 yield "%s:%d" % (fname, rowi), tseqs
 
 
-class MazdaSurveyCSVSource(TokenSequenceSource):
+class MazdaSurveyCSVSource(PlainTokenSequenceSource):
 
     NAME = 'mazda'
 
@@ -143,7 +143,7 @@ class MazdaSurveyCSVSource(TokenSequenceSource):
                 yield "%s:%d" % (fname, rowi), tseqs
 
 
-class DensoEAFSource(DirectorySource):
+class DensoEAFSource(PlainDirectorySource):
 
     NAME = 'denso'
 
@@ -161,7 +161,7 @@ class DensoEAFSource(DirectorySource):
             yield ("%s:%d" % (target_file, ai), tseqs)
 
 
-class TwitterReplySource(TokenSequenceSource):
+class TwitterReplySource(PlainTokenSequenceSource):
 
     NAME = 'twitter_reply'
 
@@ -196,7 +196,7 @@ class TwitterReplySource(TokenSequenceSource):
         return txt
 
 
-class TableDataSource(TokenSequenceSource):
+class TableDataSource(PlainTokenSequenceSource):
 
     NAME = 'tdata'
 
@@ -221,7 +221,7 @@ class TableDataSource(TokenSequenceSource):
             yield table.address, tseqs
 
 
-class AnnotatedTableDataSource(TokenSequenceSource):
+class AnnotatedTableDataSource(PlainTokenSequenceSource):
 
     NAME = 'annotated_tdata'
 
@@ -241,7 +241,7 @@ class AnnotatedTableDataSource(TokenSequenceSource):
             yield table.address, tseqs
 
 
-class RPEDataSource(TokenSequenceSource):
+class RPEDataSource(PlainTokenSequenceSource):
 
     NAME = 'rpe'
 
@@ -302,11 +302,11 @@ class RPEDataSource(TokenSequenceSource):
                     yield "%s:%s" % (fname, doci), tseqs
 
 
-class ConvergenceAcceleratorDataSource(TokenSequenceSource):
+class ConvergenceAcceleratorDataSource(PlainTokenSequenceSource):
 
     NAME = 'convacc'
 
-    # Format of the file is is ID, DOCID, TEXT.
+    # Format of the file is ID, DOCID, TEXT.
     def token_sequences(self):
         import csv
         fname = self.source_name
@@ -340,7 +340,7 @@ class ConvergenceAcceleratorDataSource(TokenSequenceSource):
                 yield "%s:%s" % (fname, doci), tseqs
 
 
-class RecipeDataSource(TokenSequenceSource):
+class RecipeDataSource(PlainTokenSequenceSource):
 
     NAME = 'recipes'
 
@@ -370,6 +370,105 @@ class EncounterFastFoodSource(CsvFileSource):
         super().__init__(source_name, column_header, **kwargs)
 
 
+class TriggersNewsSource(PlainTokenSequenceSource):
+
+    NAME = 'triggers_news'
+
+    class ParseState:
+
+        def __init__(self, source):
+            self.source = source
+            self.site = None
+            self.counter = 0
+            self.page_error = False
+            self.saw_date = False
+            self.in_footer = False
+            self.page = ''
+
+        def get_page(self):
+            self.page_id = page_id = "%s:%d" % (self.site, self.counter)
+            self.raw_page = self.page
+            skip = False
+            if self.site is None:
+                skip = True
+            if self.page_error:
+                skip = True
+            self.page_error = False
+            self.saw_date = False
+            self.in_footer = False
+            if skip:
+                return None
+            if re.search(f'\S', self.page):
+                tseqs = self.source.token_sequences_from_text(self.page)
+                self.page = ''
+                return page_id, tseqs
+            else:
+                return None
+
+        def see_site(self, site):
+            self.site = site
+            self.counter = 0
+
+        def see_page_boundary(self):
+            self.counter += 1
+
+        def see_date(self):
+            self.saw_date = True
+
+        def see_error(self):
+            self.page_error = True
+
+        def see_footer(self):
+            self.in_footer = True
+
+        def add_line(self, line):
+            if self.site is None:
+                return
+            if self.page_error or self.in_footer or not self.saw_date:
+                return
+            self.page += line
+
+    def token_sequences(self):
+        fname = self.source_name
+        self.state = state = self.ParseState(self)
+        with open(fname) as fh:
+            for line in fh:
+
+                m = re.match(r'==== SITE (\S+)', line)
+                if m is not None:
+                    result = state.get_page()
+                    if result:
+                        yield result
+                    state.see_site(m.group(1))
+                    continue
+
+                m = re.match(r'== ', line)
+                if m is not None:
+                    result = state.get_page()
+                    if result:
+                        yield result
+                    state.see_page_boundary()
+                    continue
+
+                if re.match(r'ERROR ', line):
+                    state.see_error()
+                    continue
+
+                if re.match(r'DATE', line):
+                    state.see_date()
+                    continue
+
+                if re.match(r'KEYWORDS|SUMMARY', line):
+                    state.see_footer()
+                    continue
+
+                state.add_line(line)
+
+        result = state.get_page()
+        if result is not None:
+            yield result
+
+
 PROJECT_SOURCES = dict(
     patents=PatentCSVSource,
     mazda=MazdaSurveyCSVSource,
@@ -380,6 +479,7 @@ PROJECT_SOURCES = dict(
     rpe=RPEDataSource,
     recipes=RecipeDataSource,
     encounter=EncounterFastFoodSource,
-    convacc=ConvergenceAcceleratorDataSource
+    convacc=ConvergenceAcceleratorDataSource,
+    triggers_news=TriggersNewsSource
 )
 

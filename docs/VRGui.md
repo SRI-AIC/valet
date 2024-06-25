@@ -1,5 +1,14 @@
 # A Valet Rules GUI Tool
 
+NOTE: `scripts/vrgui.py`, which is documented here, is superseded by 
+`valetrules/gui/gui.py`, and may not work as documented.
+`gui.py` is very similar, but there have been some changes. 
+Other differences are not yet documented, but the new GUI should be run as 
+
+```
+python -m valetrules.gui.gui [-h] [ -y (text|directory|<etc>)] [-x (stanza|spacy)] <pattern_file> <text_source>
+```
+
 `vrgui` is a Python script to wrap Valet Rules capabilities into a GUI
 designed for efficient authoring of extraction rules
 (a.k.a. patterns). The tool can be used to experiment interactively
@@ -26,7 +35,7 @@ Arguments of `vrgui.py` are positional, with the following value types:
 The most important optional arguments are `--target-type` and `--nlp-engine`.
 The `--help` output above shows only the default values of all the
 optional arguments.
-Options for `vcgui.py` are as follow:
+Options for `vrgui.py` are as follow:
 
 |Option|Long Option|Values|Description|
 |------|-----------|------|-----------|
@@ -50,24 +59,16 @@ work with files from the specified directory, which will be treated as
 text files in the system default encoding. An alternate choice is
 `text`, in which case `vrgui` will work with just the single specified
 `text_source`, again treated as a text file in the system default
-encoding. (There may be additional choices available for files in
-particular formats related to particular projects.)
+encoding. 
+(Other choices may be found by examining the source code file 
+for the `nlpcore.tseqsrc` module.
+There may be additional choices available for files in
+particular formats related to particular SRI projects.)
 
 The available choices for `--nlp-engine` are `stanza`, `spacy`, and
 `off`. One of the Stanza and Spacy tools may be specified to provide
 several NLP (natural language processing) capabilities leveraged by
-`vrgui`. Specifically, these tools provide dependency tree parsing,
-part-of-speech identification, lemma identification, and named entity
-recognition. Certain `vrgui` capabilities rely on the presence of
-these tools and the information they provide, but these tools are not
-required if your patterns do not require that information.
-
-Note that Stanza and Spacy have somewhat different behavior,
-particularly in regard to the dependency tree parses they
-generate. These differences can require your patterns to be written
-differently to conform to whichever tool you choose. In many cases,
-patterns can be written to work with either tool, but this requires
-more effort.
+ValetRules.
 
 ## Description
 

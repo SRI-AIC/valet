@@ -1,3 +1,15 @@
+"""
+Documentation TBD.
+This is not a central part of the Valet code.
+It is not exercised by any tests.
+It doesn't seem to be referenced by any scripts, even old ones.
+It is referenced by tokentest.py, but there seem to be 
+no calls to the referencing methods anywhere.
+"""
+
+# TODO What's this about?
+
+
 class Query(object):
 
     def query_string(self):

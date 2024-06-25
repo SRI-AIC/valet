@@ -1,15 +1,17 @@
+from abc import abstractmethod
 from frozendict import frozendict
 import random
-from abc import abstractmethod
 import re
-import numpy as np
+from typing import Optional
 
+import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
 # from aper import AveragedPerceptron, FeatureVector
-from valetrules.manager import VRManager
+from nlpcore.tokenizer import TokenSequence
+from .manager import VRManager
 
 
 class Embedding:
@@ -123,9 +125,7 @@ class Featurizer:
 
 class Example:
 
-
-
-    def __init__(self, extractor, tseq=None, starti=None, endi=None):
+    def __init__(self, extractor, tseq: Optional[TokenSequence] = None, starti=None, endi=None):
 
         self.extractor = extractor
         # tseq is an AnnotatedTokenSequence object; tseq[i] := tseq.tokens[i]
@@ -322,7 +322,7 @@ class Extractor:
             if not any(ex for ex in self.training_examples.keys() if ex.path == example.path):
                 self.training_paths.remove(example.path)
 
-    def predictions(self, tseq):
+    def predictions(self, tseq: TokenSequence):
         preds = []
         for pred in self.relation_predictions(tseq):
             yield pred
@@ -337,7 +337,7 @@ class Extractor:
                 continue
             yield pred
 
-    def relation_predictions(self, tseq):
+    def relation_predictions(self, tseq: TokenSequence):
         # Return all predictions, including those with score < 0
         paths = [p for p in self.training_paths if p is not None]
         if len(paths) == 0:
@@ -352,7 +352,7 @@ class Extractor:
             #print("   Relation: Score of %s is %f" % (example, score))
             yield example, score, example in self.training_examples
 
-    def cached_relation_predictions(self, tseq):
+    def cached_relation_predictions(self, tseq: TokenSequence):
         # Version of above which caches previously found examples
         # Return all predictions, including those with score < 0
         if not hasattr(tseq, 'matches'):
@@ -372,7 +372,7 @@ class Extractor:
             for example in tseq.matches[path]:
                 yield example, self.score(example), example in self.training_examples
 
-    def entity_predictions(self, tseq):
+    def entity_predictions(self, tseq: TokenSequence):
         # Return all predictions, including those with score < 0
         for i in range(len(tseq)):
             example = Example(self, tseq, i, i)

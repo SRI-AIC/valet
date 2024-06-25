@@ -2,9 +2,9 @@ import traceback
 import re
 from importlib import import_module
 import plac
-from tkinter import Frame, Button, Text, Scrollbar, Label, WORD, IntVar, Checkbutton, LEFT, simpledialog, BOTH, Message, \
-Listbox, MULTIPLE, TOP, END, Entry, E, W, N, NW,  Toplevel, SINGLE, StringVar, DoubleVar, messagebox, Radiobutton
-from tkinter.ttk import Progressbar, Style
+from tkinter import Button, Text, Scrollbar, Label, WORD, IntVar, Checkbutton, LEFT, simpledialog, BOTH, Message, \
+Listbox, MULTIPLE, TOP, END, Entry, E, W, N, NW,  Toplevel, SINGLE, StringVar, DoubleVar, messagebox, SOLID, YES
+from tkinter.ttk import Progressbar, Style, Frame
 from valetrules.manager import VRManager
 from valetrules.statement import StatementParser, BrokenRegion, CommentRegion, InterpretableRegion, ImportRegion
 # from valetrules.extml import Embedding
@@ -27,8 +27,6 @@ try:
     model_learning_available = True
 except Exception:
     model_learning_available = False
-
-
 
 
 class RepeatedTimer(object):
@@ -280,6 +278,32 @@ class ChoiceDialog(simpledialog.Dialog):
         self.selection = reslist
 
 
+class ToolTip(object):
+
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tipwindow = None
+
+    def showtip(self, x, y):
+        if self.tipwindow or not self.text:
+            return
+        self.tipwindow = tw = Toplevel(self.widget)
+        tw.wm_overrideredirect(1)
+        tw.wm_geometry("+%d+%d" % (x, y))
+        label = Label(tw, text=self.text, justify=LEFT,
+                      background="#ffffe0", relief=SOLID, borderwidth=1,
+                      font=("tahoma", "8", "normal"))
+        print(label)
+        label.pack(ipadx=1)
+
+    def hidetip(self):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            tw.destroy()
+
+
 class Manager(object):
 
     def __init__(self, application, pattern_file, data_source, embedding_file=None):
@@ -309,7 +333,7 @@ class Manager(object):
         """
         if self.current_name is None:
             return None
-        _, type_ = self.vrm.lookup_extractor(self.current_name)
+        _, type_, _ = self.vrm.lookup_extractor(self.current_name)
         return type_
 
     def frames(self):
@@ -317,11 +341,10 @@ class Manager(object):
         sequence in the current text, yielding any matching frames."""
         if self.current_name is None:
             return
-        ext, type_ = self.vrm.lookup_extractor(self.current_name)
+        ext, type_, subst = self.vrm.lookup_extractor(self.current_name)
         if type_ == 'frame':
             for tseq in self.token_sequences:
-                ext.set_source_sequence(tseq)
-                for frame in ext.extract():
+                for frame in ext.extract(tseq, subst=subst):
                     yield frame
         else:
             return
@@ -422,6 +445,7 @@ class Manager(object):
                 # if it's not due to a code bug -- the message alone should 
                 # be sufficient. 
                 print("VRGUI PATTERN PARSE ERROR: %s" % ex)
+                regions.append(BrokenRegion(region.text, region.start_offset, region.end_offset, str(ex)))
         offset = 0
         offsets = []
         for line in re.split(r'\n', ptext):
@@ -673,13 +697,16 @@ class Application(Frame):
         self.name_pattern = None
         self.learning = False
         self.model_path = ""
-
+        self.broken = 0
+        self.culled = {}
+        self.culling = False
 
     def parse_patterns(self):
         # Remove all tags
         self.pattern_widget.tag_delete(*self.pattern_widget.tag_names())
 
         self.names = []
+        self.broken = 0
 
         def highlight(event, tname):
             self.pattern_widget.tag_config(tname, underline=1)
@@ -690,24 +717,32 @@ class Application(Frame):
         def click(event, tname):
             for other_tname in self.names:
                 self.pattern_widget.tag_config(other_tname, background=self.normal_background)
+            self.culled = {}
             self.pattern_widget.tag_config(tname, background="light blue")
             si, ei = self.pattern_widget.tag_nextrange(tname, '1.0')
             self.manager.current_name = name = self.pattern_widget.get(si, ei)
             self.display_pattern_matches(name)
             # Get the pattern that matches the selected name so that it can be amended
-            type, pattern = self.manager.vrm.lookup_pattern(name)
+            #type, pattern = self.manager.vrm.lookup_pattern(name)
             # Only ^ patterns are eligible to be amended
-            if type == '^':
-                self.pattern_button["state"] = "normal"
-                self.name_pattern = (name, type, pattern)
-            else:
-                self.pattern_button["state"] = "disabled"
+            #if type == '^':
+            #    self.pattern_button["state"] = "normal"
+            #    self.name_pattern = (name, type, pattern)
+            #else:
+            #    self.pattern_button["state"] = "disabled"
 
         mgr = self.manager
         for region in self.manager.get_pattern_regions():
             so, eo = mgr.region_offsets(region)
             if isinstance(region, BrokenRegion):
-                self.pattern_widget.tag_add('broken', so, eo)
+                tagname = 'broken.%d' % self.broken
+                self.broken += 1
+                self.pattern_widget.tag_add(tagname, so, eo)
+                self.pattern_widget.tag_config(tagname, background='LightPink')
+                report = lambda e, msg=region.brokenness: self.message(msg)
+                unreport = lambda e: self.message("")
+                self.pattern_widget.tag_bind(tagname, '<Enter>', report)
+                self.pattern_widget.tag_bind(tagname, '<Leave>', unreport)
             elif isinstance(region, CommentRegion):
                 self.pattern_widget.tag_add('stuff', so, eo)
             elif isinstance(region, InterpretableRegion):
@@ -729,10 +764,9 @@ class Application(Frame):
                     # doesn't make sense and causes exception
                     self.pattern_widget.tag_bind(tagname, '<Button>', clk)
                 self.names.append(tagname)
-        self.pattern_widget.tag_config('broken', background='LightPink')
         self.pattern_widget.tag_config('stuff', background='light gray')
 
-    def createWidgets(self, term_expansion, scale_height, font_size):
+    def create_pattern_frame(self, scale_height, font_size):
         pattern_frame = Frame(self)
         pscroll_widget = Scrollbar(pattern_frame, orient="vertical")
         pscroll_widget.grid(row=0, column=1, sticky="ns")
@@ -748,9 +782,8 @@ class Application(Frame):
                                                     yscrollcommand=pscroll_widget.set,
                                                     bd=2, relief="sunken",
                                                     font=('Courier', '%s' % widget_font_size))
-        pattern_widget.grid(row=0, column=0)
+        pattern_widget.grid(row=0, column=0, sticky="nsew")
         pscroll_widget['command'] = self.pattern_widget.yview
-        pattern_frame.grid(row=0, column=0)
 
         with open(self.manager.pattern_file, "r") as fh:
             pattern_text = fh.read()
@@ -761,12 +794,19 @@ class Application(Frame):
         self.normal_background = self.pattern_widget.tag_cget('test tag', 'background')
         pattern_widget.tag_delete('test tag')
 
+        pattern_frame.grid_rowconfigure(0, weight=1)
+        pattern_frame.grid_columnconfigure(0, weight=5)
+        pattern_frame.grid_columnconfigure(1, weight=1)
+
+        return pattern_frame
+
+    def create_text_frame(self, scale_height, font_size):
         text_frame = Frame(self)
         tscroll_widget = Scrollbar(text_frame, orient="vertical")
         tscroll_widget.grid(row=0, column=1, sticky="ns")
         text_widget_height = 8
         if scale_height is not None:
-            pattern_widget_height *= scale_height
+            text_widget_height *= scale_height
         widget_font_size = 20
         if font_size is not None:
             widget_font_size = font_size
@@ -779,77 +819,93 @@ class Application(Frame):
         text_widget.bind('<ButtonRelease-1>', self.respond_button_release)
         text_widget.bind('<Shift-Button>', self.expand_text_pane_term)
         text_widget.bind('<Control-Button>', self.present_learning_example)
-        text_widget.grid(row=0, column=0)
+        text_widget.grid(row=0, column=0, stick="nsew")
         tscroll_widget['command'] = text_widget.yview
-        text_frame.grid(row=1, column=0)
 
-        control_frame = Frame(self)
-        control_frame.grid(row=2, column=0, sticky="we")
+        text_frame.grid_rowconfigure(0, weight=1)
+        text_frame.grid_columnconfigure(0, weight=5)
+        text_frame.grid_columnconfigure(1, weight=1)
 
+        return text_frame
+
+    def create_button_frame(self, control_frame):
         button_frame = Frame(control_frame, relief="groove", borderwidth=2)
 
-        button_row = 0
-        button_width = 10
+        button_col = 0
+        bgrid_config = dict(row=0, padx=3, pady=1)
 
         self.positive_class = StringVar()
         #positive_only = Entry(button_frame, text='', textvariable=self.positive_class)
         #positive_only.grid(row=button_row, column=0)
 
-        parse_button = Button(button_frame, text="Parse", command=self.parse_patterns, width=button_width)
-        parse_button.grid(row=button_row, column=1)
-        button_row += 1
+        parse_button = Button(button_frame, text="Parse", command=self.parse_patterns)
+        parse_button.grid(column=button_col, **bgrid_config)
+        button_col += 1
 
-        save_button = Button(button_frame, text="Save", command=self.save, width=button_width)
-        save_button.grid(row=button_row, column=1)
-        button_row += 1
+        save_button = Button(button_frame, text="Save", command=self.save)
+        save_button.grid(column=button_col, **bgrid_config)
+        button_col += 1
 
-        next_button = Button(button_frame, text="Next", command=self.next, width=button_width)
-        next_button.grid(row=button_row, column=1)
-        button_row += 1
+        next_button = Button(button_frame, text="Next", command=self.next)
+        next_button.grid(column=button_col, **bgrid_config)
+        button_col += 1
 
-        scan_button = Button(button_frame, text="Scan", command=self.scan, width=button_width)
-        scan_button.grid(row=button_row, column=1)
-        button_row += 1
+        scan_button = Button(button_frame, text="Scan", command=self.scan)
+        scan_button.grid(column=button_col, **bgrid_config)
+        button_col += 1
 
-        stop_button = Button(button_frame, text="Stop", command=self.stop, width=button_width)
-        stop_button.grid(row=button_row, column=1)
-        button_row += 1
+        cull_button = Button(button_frame, text="Cull", command=self.cull)
+        cull_button.grid(column=button_col, **bgrid_config)
+        button_col += 1
 
-        rewind_button = Button(button_frame, text="Rewind", command=self.rewind, width=button_width)
-        rewind_button.grid(row=button_row, column=1)
-        button_row += 1
+        stop_button = Button(button_frame, text="Stop", command=self.stop)
+        stop_button.grid(column=button_col, **bgrid_config)
+        button_col += 1
 
-        gather_button = Button(button_frame, text="Gather", command=self.gather, width=button_width)
-        gather_button.grid(row=button_row, column=1)
-        button_row += 1
+        rewind_button = Button(button_frame, text="Rewind", command=self.rewind)
+        rewind_button.grid(column=button_col, **bgrid_config)
+        button_col += 1
 
-        export_button = Button(button_frame, text="Export", command=self.export, width=button_width)
-        export_button.grid(row=button_row, column=1)
-        button_row += 1
+        clear_button = Button(button_frame, text="Clear", command=self.clear)
+        clear_button.grid(column=button_col, **bgrid_config)
+        button_col += 1
+
+        #gather_button = Button(button_frame, text="Gather", command=self.gather, width=button_width)
+        #gather_button.grid(row=button_row, column=button_col)
+        #button_col += 1
+
+        #export_button = Button(button_frame, text="Export", command=self.export)
+        #export_button.grid(column=button_col, **bgrid_config)
+        #button_col += 1
 
         # Only enable this feature if the flair model learning library is available.
-        if model_learning_available:
-            self.learn_button = learn_button = Button(button_frame, text="Learn", command=self.learn, width=button_width)
-            learn_button.grid(row=button_row, column=1)
-            button_row += 1
+        #if model_learning_available:
+        #    self.learn_button = learn_button = Button(button_frame, text="Learn", command=self.learn, width=button_width)
+        #    learn_button.grid(row=button_row, column=1)
+        #    button_row += 1
 
         # Only draw the 'Expand' button if we are using the term expansion feature
-        if term_expansion is not None:
-            expand_button = Button(button_frame, text="Expand", command=self.expand, width=button_width)
-            expand_button.grid(row=button_row, column=1)
-            button_row += 1
+        #if term_expansion is not None:
+        #    expand_button = Button(button_frame, text="Expand", command=self.expand, width=button_width)
+        #    expand_button.grid(row=button_row, column=1)
+        #   button_row += 1
 
-        self.pattern_button = Button(button_frame, text="Pattern", command=self.pattern, width=button_width)
-        self.pattern_button.grid(row=button_row, column=1)
-        self.pattern_button["state"] = "disabled"
-        button_row += 1
+        #self.pattern_button = Button(button_frame, text="Pattern", command=self.pattern, width=button_width)
+        #self.pattern_button.grid(row=button_row, column=1)
+        #self.pattern_button["state"] = "disabled"
+        #button_row += 1
 
         #self.quitButton = Button(button_frame, text="Quit", command=self.quit, width=button_width)
         #self.quitButton.grid(row=button_row, column=1)
         #button_row += 1
 
-        button_frame.grid(row=0, column=0, sticky="wns")
+        button_frame.grid_rowconfigure(0, weight=1)
+        for col in range(button_col):
+            button_frame.grid_columnconfigure(col, weight=1)
 
+        return button_frame
+
+    def create_message_frame(self, control_frame):
         message_frame = Frame(control_frame)
 
         # Trying text widget for both of these to enable copying of the text.
@@ -860,12 +916,11 @@ class Application(Frame):
         # filename_widget = self.filename_widget = Label(message_frame, text='', height=3, width=90,
         #                                                wraplength=800, relief="sunken", anchor="nw", padx=5, pady=5,
         #                                                font=("Helvetica", "16"), justify=LEFT)
-        filename_widget = self.filename_widget = Text(message_frame, height=3, width=90,
+        filename_widget = self.filename_widget = Text(message_frame, height=1, width=90,
                                                     relief="sunken", padx=5, pady=5, background="gray88",
                                                     font=("Helvetica", "16"))
         filename_widget.configure(state="disabled")
         filename_widget.bind("<1>", lambda event: filename_widget.focus_set())
-        filename_widget.grid(row=1, column=0, sticky="we")
         filename_widget.grid(row=0, column=0, sticky="we")
 
         # message_widget = self.message_widget = Label(message_frame, text='', height=3, width=90,
@@ -876,8 +931,31 @@ class Application(Frame):
                                                      font=("Helvetica", "16"))
         message_widget.configure(state="disabled")
         message_widget.bind("<1>", lambda event: message_widget.focus_set())
-        message_widget.grid(row=1, column=0, sticky="we")
+        message_widget.grid(row=1, column=0, sticky="nswe")
 
+        message_frame.grid_rowconfigure(0, weight=1)
+        message_frame.grid_rowconfigure(1, weight=1)
+        message_frame.grid_columnconfigure(0, weight=1)
+
+        return message_frame
+
+    def create_control_frame(self):
+        control_frame = Frame(self)
+
+        button_frame = self.create_button_frame(control_frame)
+        button_frame.grid(row=0, column=0, sticky="wns")
+
+        message_frame = self.create_message_frame(control_frame)
+        message_frame.grid(row=1, column=0, sticky="nsew")
+
+
+        control_frame.grid_rowconfigure(0, weight=1)
+        control_frame.grid_rowconfigure(1, weight=1)
+        control_frame.grid_columnconfigure(0, weight=1)
+
+        return control_frame
+
+    def create_progress_bar(self):
         # Adds a status bar to the bottom of the main window. This is mainly used to track the progress of the
         # background sequence learning process but is also a vehicle for other status messages. See status_message()
         # for details
@@ -915,10 +993,28 @@ class Application(Frame):
         self.progress_bar_value = DoubleVar(self)
         progress_bar = self.progress_bar = Progressbar(self, style='text.Horizontal.TProgressbar',
                                                        variable=self.progress_bar_value)
-        progress_bar.grid(row=3, column=0, columnspan=1, sticky="we")
         progress_bar.bind("<Button-1>", self.status_bar_clicked)
 
-        message_frame.grid(row=0, column=1, sticky="we")
+        return progress_bar
+
+    def createWidgets(self, term_expansion, scale_height, font_size):
+        pattern_frame = self.create_pattern_frame(scale_height, font_size)
+        pattern_frame.grid(row=0, column=0, sticky="nsew")
+
+        text_frame = self.create_text_frame(scale_height, font_size)
+        text_frame.grid(row=1, column=0, sticky="nsew")
+
+        control_frame = self.create_control_frame()
+        control_frame.grid(row=2, column=0, sticky="nsew")
+
+        progress_bar = self.create_progress_bar()
+        progress_bar.grid(row=3, column=0, columnspan=1, sticky="we")
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(3, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
         # Populate initial contents.
         self.manager.next_text_block()
@@ -973,12 +1069,12 @@ class Application(Frame):
         else:
             # Delete old match tags (and all other tags -- why?)
             self.text_widget.tag_delete(*self.text_widget.tag_names())
-            #print("Deleted old tags in display_matches due to refresh=False")
         for m, si, ei in matches:
+            if self.culling and m.end - m.begin == 1:
+                if m.matching_text() not in self.culled:
+                    self.text_widget.tag_add('cullable', si, ei)
             self.text_widget.tag_add('match', si, ei)
-        #print("tag names and ranges after adding in display_matches",
-        #      [(tag_name, self.text_widget.tag_ranges(tag_name))
-        #       for tag_name in self.text_widget.tag_names()])
+        self.text_widget.tag_config('cullable', underline=1)
         self.text_widget.tag_config('match', background="light blue")
         if len(matches) == 0:
             self.message("No matches")
@@ -997,6 +1093,7 @@ class Application(Frame):
 
     def next(self):
         """Advance to the next file, displaying any matches."""
+        self.culling = False
         for source_name in self.manager.scroll():
             matches = []
             if self.manager.current_name is not None:
@@ -1008,12 +1105,36 @@ class Application(Frame):
     # e.g., before starting a new scan, doing rewind, etc.?
     def scan(self):
         """Find the next file with matches and display them."""
+        self.culling = False
         if self.manager.current_name is None:
             self.message("No pattern selected")
             return
         text, matches = self.manager.scrolling_scan(self.manager.current_name, advance=True,
                                                        positive_class=self.positive_class.get())
         self.display_matches(matches, refresh=True)
+
+    def cull(self):
+        """Like scan but intended to make it easy to assemble a list of tokens for inclusion in a membership test"""
+        if self.manager.current_name is None:
+            self.message("No pattern selected")
+            return
+        if not self.culling:
+            self.culling = True
+            self.culled = {}
+        while True:
+            text, matches = self.manager.scrolling_scan(self.manager.current_name, advance=True,
+                                                        positive_class=self.positive_class.get())
+            cullable = set()
+            for m, _, _ in matches:
+                if m.end - m.begin == 1:
+                    tok = m.matching_text()
+                    if tok not in self.culled:
+                        cullable.add(tok)
+            if len(cullable) > 0:
+                break
+        self.display_matches(matches, refresh=True)
+        for tok in cullable:
+            self.culled[tok] = False
 
     def gather(self):
         from ed.cluster import DBScan
@@ -1044,10 +1165,11 @@ class Application(Frame):
                         print("CLUSTER %d: empty")
                     else:
                         print("CLUSTER %d: %s" % (i, ' '.join(proto_tseq)))
-                        #for tseq in clustering.cluster_members(i):
-                        #    print("    %s" % ' '.join(tseq))
+                        for tseq in clustering.cluster_members(i):
+                            print("    %s" % ' '.join(tseq))
 
     def rewind(self):
+        self.culling = False
         """Go back to the first file and display its matches."""
         self.manager.text_feed = self.manager.data_source.token_sequences()
         self.manager.next_text_block()
@@ -1065,6 +1187,18 @@ class Application(Frame):
         else:
             self.message("Export complete")
 
+    def clear(self):
+        """Clear selected rule and any matches"""
+        self.culling = False
+        self.culled = {}
+        # Set to no rule selected
+        self.manager.current_name = None
+        # Ensure that no name is highlighted in the pattern pane
+        for tname in self.names:
+            self.pattern_widget.tag_config(tname, background=self.normal_background)
+        # Remove all tags in the text window
+        self.text_widget.tag_delete(*self.text_widget.tag_names())
+
     def learn(self):
         # Present the user with a set of reasonable defaults for launching sequence labeling on the data. This will
         # run in the background but the status of the run is updated as it proceeds. The user is also offered ways to
@@ -1073,7 +1207,7 @@ class Application(Frame):
         total_document_count = self.manager.get_document_count()
 
         # Get the list of extractors to train on but remove the non user labels (not sure what they are)
-        labels = self.manager.vrm.get_list_of_extractors()
+        labels = self.manager.vrm.all_extractor_names()
         labels.remove("START")
         labels.remove("END")
         labels.remove("ROOT")
@@ -1398,7 +1532,7 @@ class Application(Frame):
                                   exising_pattern=self.name_pattern)
         if pattern.patterns is not None:
             print("Pattern:", pattern.patterns)
-            regex = RegexExpression(string=pattern.patterns).parse()
+            regex = RegexExpression(expr=pattern.patterns).parse()
             print("Regex:", regex)
             regex = regex.reduce()
             print("Reduced:", regex)
@@ -1425,74 +1559,94 @@ class Application(Frame):
         If not, show POS info for token to right of current cursor.
         ...
         """
-        self.status_message("Parsing selection")
         self.message("")  # clear old msg
         if self.selection_changed:
-            if not self.show_dependency_path():
-                self.show_part_of_speech()
-                self.pattern_button["state"] = "disabled"
-            else:
-                if not self.learning_pattern:
-                    self.pattern_button["state"] = "normal"
-                self.selection_changed = False
-        else:
-            self.show_part_of_speech()
-        self.status_message("Done!")
-        self.status_message("Standing by")
+            selected = self.get_selected_tokens()
+            if selected:
+                self.show_dependency_path(*selected)
+        selected = self.get_selected_token()
+        if selected:
+            self.show_word_info(*selected)
+        selected = self.get_selected_token(matches_only=True)
+        if selected:
+            tseq, toki = selected
+            tok = tseq[toki]
+            self.culled[tok] = True
+            pattern = "cull: { %s }" % ' '.join(c for c in self.culled.keys() if self.culled[c])
+            self.write_to_clipboard(pattern)
 
-    def show_dependency_path(self):
+    def get_indicated_tokens(self, matches_only):
+        tw = self.text_widget
+        selection = tw.tag_nextrange('sel', '1.0')
+        if selection == '' or selection == ():
+            if matches_only:
+                if 'match' not in tw.tag_names('current'):
+                    return None, None, None
+            tseqi, tokeni = self.manager.get_token_indexes('current')
+            if tseqi is None:
+                return None, None, None
+            else:
+                return tseqi, tokeni, tokeni
+        else:
+            starti, endi = selection
+            if matches_only:
+                matches = tw.tag_ranges('match')
+                matches = [(matches[2*i], matches[2*i+1]) for i in range(len(matches) // 2)]
+                if not any(lambda p: tw.compare(p[0], '<=', starti) and tw.compare(p[1], '>=', endi) for p in matches):
+                    return None, None, None
+            start_tseq, start_token = self.manager.get_token_indexes(starti, True)
+            end_tseq, end_token = self.manager.get_token_indexes(endi, False)
+            if start_tseq is None or end_tseq is None or start_tseq != end_tseq:
+                return None, None, None
+            else:
+                return start_tseq, start_token, end_token
+
+    def get_selected_tokens(self, matches_only=False):
+        """
+        Returns tseq, start_token, end_token only if different tokens in the same sequence are selected.
+        """
+        tseq, start_token, end_token = self.get_indicated_tokens(matches_only)
+        if start_token >= end_token:
+            return None
+        return self.manager.token_sequences[tseq], start_token, end_token
+
+    def get_selected_token(self, matches_only=False):
+        """
+        Returns selected tseq and token index if a single token is selected.
+        """
+        tseq, start_token, end_token = self.get_indicated_tokens(matches_only)
+        if tseq is None or start_token != end_token:
+            return None
+        return self.manager.token_sequences[tseq], start_token
+
+    def show_dependency_path(self, tseq, start_token, end_token):
         """
         Show in message widget the dependency path (if any) associated with 
         the selection (if any), if dependency path calculation is enabled.
         Return True if there is a selection, otherwise False.
         """
-#        print("In show_dependency_path")
-        selection = self.text_widget.tag_nextrange('sel', '1.0')
-        if selection == '' or selection == ():
-            return False
-#        print(selection)
-        starti, endi = selection
-        start_tseq, start_token = self.manager.get_token_indexes(starti, True)
-        end_tseq, end_token = self.manager.get_token_indexes(endi, False)
-#        print((start_tseq, start_token), (end_tseq, end_token))
-        if start_tseq is None or end_tseq is None:
-            self.message("No path unless selection includes two or more tokens")
-        elif start_tseq > end_tseq:
-            self.message("No path unless selection includes two or more tokens")
-        elif start_tseq < end_tseq:
-            self.message("No path between different sequences")
-        elif start_token >= end_token:
-            # TODO In text widget, can selection have multiple segments?
-            self.message("No path unless selection includes two or more tokens")
+        if hasattr(tseq, 'find_paths'):
+            for path in tseq.find_paths(start_token, end_token):
+                self.message("Path between '%s' and '%s': %s" % (tseq[start_token], tseq[end_token], " ".join(path)))
+                self.entities_and_paths.append("%s and %s\t%s" % (tseq[start_token], tseq[end_token], path))
+                self.string_var_patterns.set(self.entities_and_paths)
+                break
+            if hasattr(tseq, 'dependency_tree_string'):
+                s = tseq.dependency_tree_string()
+                print(s)
         else:
-            tseq = self.manager.token_sequences[start_tseq]
-            if hasattr(tseq, 'find_paths'):
-                for path in tseq.find_paths(start_token, end_token):
-                    self.message("Path between '%s' and '%s': %s" % (tseq[start_token], tseq[end_token], " ".join(path)))
-                    self.entities_and_paths.append("%s and %s\t%s" % (tseq[start_token], tseq[end_token], path))
-                    self.string_var_patterns.set(self.entities_and_paths)
-                    break
-                if hasattr(tseq, 'dependency_tree_string'):
-                    s = tseq.dependency_tree_string()
-                    print(s)
-            else:
-                self.message("Dependency paths not supported")
-        return True
+            self.message("Dependency paths not supported")
 
-    def show_part_of_speech(self):
+
+    def show_word_info(self, tseq, tokeni):
         """
         Show the POS and other (lemma, NER) info for the token with the 
         current cursor (or the token to its right if cursor is not in a token).
         """
-#        print ("In show_part_of_speech")
-        tseqi, tokeni = self.manager.get_token_indexes('current')
-#        print((tseqi, tokeni))
-        if tseqi is None:
-            return
-        tseq = self.manager.token_sequences[tseqi]
         pos = tseq.get_token_annotation('pos', tokeni)
         lemma = tseq.get_token_annotation('lemma', tokeni)
         ner = tseq.get_token_annotation('ner', tokeni)
+        # TODO: include all annotations, e.g., srl, not just the usual ones
         self.message("POS of '%s' is %s, lemma is %s, ner is %s" % (tseq[tokeni], pos, lemma, ner))
 
     def expand_text_pane_term(self, *args):
@@ -1580,6 +1734,7 @@ if __name__ == "__main__":
             data_source = source_class(source_file, aux_file=aux_file, nlp_engine=nlp_engine, **aux_args)
         app = Application(pattern_file, data_source, term_expansion=term_expansion, scale_height=scale_height,
                           font_size=font_size, embedding_file=embedding_file)
+        app.pack(fill=BOTH, expand=YES)
         app.master.title("Valet Rules GUI")
         app.mainloop() 
 

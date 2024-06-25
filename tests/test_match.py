@@ -1,48 +1,44 @@
 import unittest
-from nlpcore.tokenizer import PlainTextTokenizer
-from valetrules.manager import VRManager
-from tests.text import TEST_TEXT, TEXTS
-from valetrules.match import FAMatch, FAArcMatch, FARootMatch
+
+from valetrules.match import FAMatch, FAArcMatch
+from valetrules.test.valet_test import ValetTest
+
+from tests.text import TEST_TEXT
 
 
-class TestMatch(unittest.TestCase):
-
-    def setUp(self):
-        self.tokenizer = PlainTextTokenizer(preserve_case=True, nlp_on_demand="spacy")
-        self.vrm = VRManager()
-
-    def parse_block(self, block):
-        self.vrm.forget()
-        self.vrm.parse_block(block)
-
-    def matches(self, rulename, text):
-        tseq = self.tokenizer.tokens(text)
-        # print(tseq.dependency_tree_string())
-        matches = self.vrm.scan(rulename, tseq)
-        return list(matches)
-
-    def match_count(self, rulename, text):
-        return len(self.matches(rulename, text))
+class TestMatch(ValetTest):
 
     # TODO Later split this up into separate methods.
     def test_match(self):
         print("test_match")
 
-        self.assertLess(FAMatch(begin=0, end=5), FAMatch(begin=1, end=5))
-        self.assertLess(FAMatch(begin=0, end=5), FAMatch(begin=1, end=4))
-        self.assertLess(FAMatch(begin=0, end=5), FAMatch(begin=1, end=6))
-        self.assertEqual(FAMatch(begin=0, end=5), FAMatch(begin=0, end=5))
-        self.assertGreater(FAMatch(begin=0, end=5), FAMatch(begin=0, end=4))
-        self.assertLess(FAMatch(begin=0, end=5), FAMatch(begin=0, end=6))
+        tseq = self.tseq_from_text(TEST_TEXT)
 
-        self.assertLess(FAArcMatch(begin=0, end=5), FAArcMatch(begin=1, end=5))
-        self.assertLess(FAArcMatch(begin=0, end=5), FAArcMatch(begin=1, end=4))
-        self.assertLess(FAArcMatch(begin=0, end=5), FAArcMatch(begin=1, end=6))
-        self.assertEqual(FAArcMatch(begin=0, end=5), FAArcMatch(begin=0, end=5))
-        self.assertGreater(FAArcMatch(begin=0, end=5), FAArcMatch(begin=0, end=4))
-        self.assertLess(FAArcMatch(begin=0, end=5), FAArcMatch(begin=0, end=6))
+        self.assertLess(FAMatch(seq=tseq, begin=0, end=5), FAMatch(seq=tseq, begin=1, end=5))
+        self.assertLess(FAMatch(seq=tseq, begin=0, end=5), FAMatch(seq=tseq, begin=1, end=4))
+        self.assertLess(FAMatch(seq=tseq, begin=0, end=5), FAMatch(seq=tseq, begin=1, end=6))
+        self.assertEqual(FAMatch(seq=tseq, begin=0, end=5), FAMatch(seq=tseq, begin=0, end=5))
+        self.assertGreater(FAMatch(seq=tseq, begin=0, end=5), FAMatch(seq=tseq, begin=0, end=4))
+        self.assertLess(FAMatch(seq=tseq, begin=0, end=5), FAMatch(seq=tseq, begin=0, end=6))
+
+        self.assertLess(FAArcMatch(seq=tseq, begin=0, end=5), FAArcMatch(seq=tseq, begin=1, end=5))
+        self.assertLess(FAArcMatch(seq=tseq, begin=0, end=5), FAArcMatch(seq=tseq, begin=1, end=4))
+        self.assertLess(FAArcMatch(seq=tseq, begin=0, end=5), FAArcMatch(seq=tseq, begin=1, end=6))
+        self.assertEqual(FAArcMatch(seq=tseq, begin=0, end=5), FAArcMatch(seq=tseq, begin=0, end=5))
+        self.assertGreater(FAArcMatch(seq=tseq, begin=0, end=5), FAArcMatch(seq=tseq, begin=0, end=4))
+        self.assertLess(FAArcMatch(seq=tseq, begin=0, end=5), FAArcMatch(seq=tseq, begin=0, end=6))
+
+        # There are probably more cases that could be added here.
+        self.assertTrue(FAMatch(seq=tseq, begin=1, end=5).overlaps(FAMatch(seq=tseq, begin=1, end=5)))
+        self.assertTrue(FAMatch(seq=tseq, begin=1, end=6).overlaps(FAMatch(seq=tseq, begin=1, end=5)))
+        self.assertTrue(FAMatch(seq=tseq, begin=1, end=5).overlaps(FAMatch(seq=tseq, begin=1, end=6)))
+        self.assertTrue(FAMatch(seq=tseq, begin=0, end=5).overlaps(FAMatch(seq=tseq, begin=1, end=5)))
+        self.assertTrue(FAMatch(seq=tseq, begin=1, end=5).overlaps(FAMatch(seq=tseq, begin=0, end=5)))
+        self.assertTrue(FAMatch(seq=tseq, begin=1, end=5).overlaps(FAMatch(seq=tseq, begin=0, end=6)))
+        self.assertTrue(FAMatch(seq=tseq, begin=0, end=6).overlaps(FAMatch(seq=tseq, begin=1, end=5)))
 
         print("test_match done")
+
 
 if __name__ == '__main__':
     print("test_match.py starting")

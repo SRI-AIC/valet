@@ -7,6 +7,8 @@ from nlpcore.tokenizer import WordTokenizer, TokenSequence
 
 class Sentencer(SimpleClass):
 
+    tokenizer: WordTokenizer  # we don't have a proper base class
+
     def __init__(self, **args):
         SimpleClass.__init__(self, **args)
         self._default('blank_line_terminals', False)
@@ -24,7 +26,7 @@ class Sentencer(SimpleClass):
         result = []
 
         def sentence(ptr, result):
-            start,end = ptr
+            start, end = ptr
             chunk = text[start:end]
             if re.search(self.terminal_exceptions, chunk):
                 return
@@ -48,6 +50,10 @@ class Sentencer(SimpleClass):
 
 # Not to be confused with Sentence in corpus/__init__.py.
 class Sentence(SimpleClass):
+
+    text: str
+    start: int
+    end: int
 
     def sentence_text(self):
         text = self.text[self.start:self.end]
